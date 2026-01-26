@@ -2,6 +2,7 @@
   "name": "pollstraw-backend",
   "version": "1.0.0",
   "description": "PollStraw - Real-time Polling Platform API",
+  "type": "module",
   "main": "dist/app.js",
   "scripts": {
     "dev": "tsx watch src/app.ts",

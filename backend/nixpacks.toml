@@ -4,7 +4,7 @@ nixPkgs = ["nodejs-18_x", "npm-9_x"]
 
 [phases.install]
 cmds = [
-  "npm ci --omit=dev",
+  "npm ci",
   "npm run db:generate"
 ]
 

@@ -4,8 +4,11 @@ import { env, isDevelopment } from './env.js';
 // Create Redis client
 export const redis = new Redis(env.REDIS_URL, {
   maxRetriesPerRequest: 3,
-  retryDelayOnFailover: 100,
   lazyConnect: true,
+  retryStrategy: (times: number) => {
+    const delay = Math.min(times * 50, 2000);
+    return delay;
+  },
 });
 
 // Redis event handlers
