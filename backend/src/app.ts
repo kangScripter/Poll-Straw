@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer } from 'http';
+import { existsSync } from 'fs';
 import { env, isDevelopment } from './config/env.js';
 import { connectDatabase, disconnectDatabase } from './config/database.js';
 import { connectRedis, disconnectRedis } from './config/redis.js';
@@ -20,8 +21,19 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const httpServer = createServer(app);
 
-// Security middleware
-app.use(helmet());
+// Security middleware with CSP configured for poll redirect page
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"], // Allow inline scripts for poll redirect page
+      styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https://api.pollstraw.com"], // Allow API calls
+      fontSrc: ["'self'", "data:"],
+    },
+  },
+}));
 
 // CORS configuration - allow mobile app connections
 app.use(cors({
@@ -57,10 +69,76 @@ app.use('/static', express.static(path.join(__dirname, 'public')));
 
 // Deep link / Universal link redirect handler for polls
 // This serves the landing page that tries to open the app or shows install options
-app.get('/poll/:shareUrl', (req, res) => {
-  const { shareUrl } = req.params;
-  // Serve the redirect HTML page
-  res.sendFile(path.join(__dirname, 'public', 'poll-redirect.html'));
+app.get('/poll/:shareUrl', (req, res, next) => {
+  try {
+    const { shareUrl } = req.params;
+    const htmlPath = path.join(__dirname, 'public', 'poll-redirect.html');
+    
+    // Log path for debugging
+    if (isDevelopment) {
+      console.log('Serving poll redirect page:', {
+        shareUrl,
+        htmlPath,
+        __dirname,
+        fileExists: existsSync(htmlPath),
+      });
+    }
+    
+    // Check if file exists
+    if (!existsSync(htmlPath)) {
+      console.error('Poll redirect HTML file not found:', htmlPath);
+      return res.status(500).send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>PollStraw - Error</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: system-ui; text-align: center; padding: 40px;">
+          <h1>Unable to load poll</h1>
+          <p>The redirect page could not be found.</p>
+          <p>Please contact support if this issue persists.</p>
+        </body>
+        </html>
+      `);
+    }
+    
+    // Serve the redirect HTML page
+    res.sendFile(htmlPath, (err) => {
+      if (err) {
+        console.error('Error serving poll redirect page:', {
+          error: err.message,
+          code: (err as any).code,
+          path: htmlPath,
+        });
+        // Fallback: send a simple HTML response
+        if (!res.headersSent) {
+          res.status(500).send(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <title>PollStraw - Error</title>
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body style="font-family: system-ui; text-align: center; padding: 40px;">
+              <h1>Unable to load poll</h1>
+              <p>Please try again later.</p>
+            </body>
+            </html>
+          `);
+        }
+      }
+    });
+  } catch (error: any) {
+    console.error('Error in poll redirect handler:', error);
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+        message: isDevelopment ? error.message : undefined,
+      });
+    }
+  }
 });
 
 // Apple App Site Association file for iOS Universal Links
