@@ -15,18 +15,20 @@ export interface Tokens {
 
 // Generate access token
 export const generateAccessToken = (payload: TokenPayload): string => {
-  const options: SignOptions = {
-    expiresIn: env.JWT_EXPIRES_IN,
-  };
-  return jwt.sign(payload, env.JWT_SECRET, options);
+  return jwt.sign(
+    payload,
+    env.JWT_SECRET,
+    { expiresIn: env.JWT_EXPIRES_IN } as SignOptions
+  );
 };
 
 // Generate refresh token
 export const generateRefreshToken = (payload: TokenPayload): string => {
-  const options: SignOptions = {
-    expiresIn: env.JWT_REFRESH_EXPIRES_IN,
-  };
-  return jwt.sign(payload, env.JWT_REFRESH_SECRET, options);
+  return jwt.sign(
+    payload,
+    env.JWT_REFRESH_SECRET,
+    { expiresIn: env.JWT_REFRESH_EXPIRES_IN } as SignOptions
+  );
 };
 
 // Generate both tokens
