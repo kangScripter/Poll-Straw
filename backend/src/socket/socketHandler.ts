@@ -43,7 +43,7 @@ export const initializeSocket = (httpServer: HttpServer): Server => {
     });
 
     // Error handler
-    socket.on('error', (error) => {
+    socket.on('error', (error: Error) => {
       console.error(`❌ Socket error for ${socket.id}:`, error);
     });
   });
@@ -66,7 +66,7 @@ const setupRedisPubSub = async () => {
     // Subscribe to all poll updates using pattern
     await subscriber.psubscribe('poll:*');
 
-    subscriber.on('pmessage', (pattern, channel, message) => {
+    subscriber.on('pmessage', (pattern: string, channel: string, message: string) => {
       // Extract poll ID from channel (poll:pollId)
       const pollId = channel.split(':')[1];
       
@@ -77,7 +77,7 @@ const setupRedisPubSub = async () => {
     });
 
     console.log('✅ Redis pub/sub initialized');
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('❌ Failed to setup Redis pub/sub:', error);
     console.log('⚠️ Real-time updates will be limited');
   }

@@ -1,4 +1,4 @@
-import Redis from 'ioredis';
+import { Redis } from 'ioredis';
 import { env, isDevelopment } from './env.js';
 
 // Create Redis client
@@ -16,7 +16,7 @@ redis.on('connect', () => {
   console.log('✅ Redis connected successfully');
 });
 
-redis.on('error', (error) => {
+redis.on('error', (error: Error) => {
   console.error('❌ Redis connection error:', error);
 });
 
@@ -29,7 +29,7 @@ redis.on('close', () => {
 export async function connectRedis(): Promise<void> {
   try {
     await redis.connect();
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('❌ Redis connection failed:', error);
     // Redis is optional for basic functionality
     console.log('⚠️ Continuing without Redis...');
