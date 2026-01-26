@@ -1,0 +1,200 @@
+// Prisma Schema for AppVote - Real-time Polling Platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== ENUMS ====================
+
+enum Role {
+  GUEST
+  USER
+  ADMIN
+}
+
+enum ResultVisibility {
+  ALWAYS
+  AFTER_VOTE
+  AFTER_DEADLINE
+  NEVER
+}
+
+enum ReportReason {
+  SPAM
+  INAPPROPRIATE
+  FRAUD
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  RESOLVED
+  DISMISSED
+}
+
+// ==================== MODELS ====================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  name          String?
+  role          Role      @default(USER)
+  isActive      Boolean   @default(true)
+  
+  // Relations
+  polls         Poll[]
+  votes         Vote[]
+  passwordResetTokens PasswordResetToken[]
+  
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([email])
+  @@index([role])
+}
+
+model Poll {
+  id              String           @id @default(cuid())
+  title           String
+  description     String?
+  
+  // Relations
+  options         PollOption[]
+  votes           Vote[]
+  reports         Report[]
+  creator         User?            @relation(fields: [creatorId], references: [id], onDelete: SetNull)
+  creatorId       String?
+  
+  // Settings
+  allowMultiple   Boolean          @default(false)
+  requireAuth     Boolean          @default(false)
+  showResults     ResultVisibility @default(ALWAYS)
+  deadline        DateTime?
+  isActive        Boolean          @default(true)
+  
+  // Anti-fraud
+  ipRestriction   Boolean          @default(true)
+  captchaRequired Boolean          @default(false)
+  
+  // Sharing
+  shareUrl        String           @unique
+  embedCode       String?
+  
+  // Analytics
+  totalVotes      Int              @default(0)
+  viewCount       Int              @default(0)
+  
+  // Timestamps
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([shareUrl])
+  @@index([creatorId])
+  @@index([isActive])
+  @@index([createdAt])
+}
+
+model PollOption {
+  id        String   @id @default(cuid())
+  text      String
+  emoji     String?
+  order     Int      @default(0)
+  voteCount Int      @default(0)
+  
+  // Relations
+  poll      Poll     @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  pollId    String
+  votes     Vote[]
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([pollId])
+}
+
+model Vote {
+  id        String      @id @default(cuid())
+  
+  // Relations
+  poll      Poll        @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  pollId    String
+  option    PollOption  @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  optionId  String
+  user      User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId    String?
+  
+  // Anti-fraud tracking
+  ipAddress String?
+  sessionId String?
+  deviceId  String?
+  
+  // Timestamps
+  createdAt DateTime    @default(now())
+  
+  @@unique([pollId, ipAddress])
+  @@unique([pollId, userId])
+  @@index([pollId])
+  @@index([optionId])
+  @@index([createdAt])
+}
+
+model Report {
+  id        String       @id @default(cuid())
+  reason    ReportReason
+  details   String?
+  status    ReportStatus @default(PENDING)
+  
+  // Relations
+  poll      Poll         @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  pollId    String
+  
+  // Reporter info (optional)
+  reporterIp String?
+  
+  // Timestamps
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  
+  @@index([pollId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  email     String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([token])
+  @@index([email])
+  @@index([expiresAt])
+}

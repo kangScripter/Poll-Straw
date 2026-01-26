@@ -1,0 +1,38 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "src/app.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "src/public/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/static/(.*)",
+      "dest": "/src/public/$1"
+    },
+    {
+      "src": "/.well-known/(.*)",
+      "dest": "/src/app.ts"
+    },
+    {
+      "src": "/poll/(.*)",
+      "dest": "/src/public/poll-redirect.html"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/src/app.ts"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/src/app.ts"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
