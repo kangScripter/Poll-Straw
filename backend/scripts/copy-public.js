@@ -40,8 +40,9 @@ try {
   });
 
   console.log('✅ Public files copied successfully');
-} catch (error: any) {
-  console.error('❌ Error copying public files:', error.message);
+} catch (error) {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  console.error('❌ Error copying public files:', errorMessage);
   // Don't exit with error - allow build to continue
   // The app will handle missing files gracefully
   console.log('⚠️ Continuing build without public files...');
