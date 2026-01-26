@@ -1,0 +1,44 @@
+# Railway ignore file
+# Files and folders to exclude from deployment
+
+# Development files
+.env
+.env.local
+.env.*.local
+*.local
+
+# Scripts (not needed in production)
+scripts/
+
+# Documentation
+*.md
+docs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+coverage/
+.nyc_output/
+*.test.ts
+*.spec.ts
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Git
+.git/
+.gitignore
+
+# Railway config (optional - can be included)
+# railway.json
+# nixpacks.toml
