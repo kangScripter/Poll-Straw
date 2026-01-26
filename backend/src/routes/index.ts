@@ -10,8 +10,12 @@ const router = Router();
 router.get('/health', (req, res) => {
   res.json({
     success: true,
-    message: 'API is running',
-    timestamp: new Date().toISOString(),
+    data: {
+      name: 'PollStraw API',
+      version: '1.0.0',
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+    },
   });
 });
 

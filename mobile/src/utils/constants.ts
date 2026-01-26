@@ -3,50 +3,75 @@ import { Platform } from 'react-native';
 
 // Helper to get the correct API URL based on platform
 const getApiUrl = (): string => {
-  // Check if API URL is configured in app.json
-  const configuredUrl = Constants.expoConfig?.extra?.apiUrl;
-  if (configuredUrl && !configuredUrl.includes('localhost')) {
-    return configuredUrl;
-  }
+  // First, check if API URL is configured in app.config.js (from .env)
+  const envApiUrl = Constants.expoConfig?.extra?.apiUrl;
+  
+  // In development, prefer localhost/emulator URLs over production
+  if (__DEV__) {
+    // For Android emulator, use 10.0.2.2 to access host machine
+    if (Platform.OS === 'android') {
+      return 'http://10.0.2.2:3000/api';
+    }
 
-  // For Android emulator, use 10.0.2.2 to access host machine
-  if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:3000/api';
-  }
+    // For iOS simulator, localhost should work
+    if (Platform.OS === 'ios') {
+      return 'http://localhost:3000/api';
+    }
 
-  // For iOS simulator, localhost should work
-  if (Platform.OS === 'ios') {
+    // Default fallback for development
     return 'http://localhost:3000/api';
   }
 
-  // Default fallback
-  return 'http://localhost:3000/api';
+  // In production, use the .env URL if available
+  if (envApiUrl) {
+    return envApiUrl;
+  }
+
+  // Production fallback
+  return 'https://api.pollstraw.com/api';
 };
 
 const getSocketUrl = (): string => {
-  // Check if Socket URL is configured in app.json
-  const configuredUrl = Constants.expoConfig?.extra?.socketUrl;
-  if (configuredUrl && !configuredUrl.includes('localhost')) {
-    return configuredUrl;
-  }
+  // First, check if Socket URL is configured in app.config.js (from .env)
+  const envSocketUrl = Constants.expoConfig?.extra?.socketUrl;
+  
+  // In development, prefer localhost/emulator URLs over production
+  if (__DEV__) {
+    // For Android emulator, use 10.0.2.2 to access host machine
+    if (Platform.OS === 'android') {
+      return 'http://10.0.2.2:3000';
+    }
 
-  // For Android emulator, use 10.0.2.2 to access host machine
-  if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:3000';
-  }
+    // For iOS simulator, localhost should work
+    if (Platform.OS === 'ios') {
+      return 'http://localhost:3000';
+    }
 
-  // For iOS simulator, localhost should work
-  if (Platform.OS === 'ios') {
+    // Default fallback for development
     return 'http://localhost:3000';
   }
 
-  // Default fallback
-  return 'http://localhost:3000';
+  // In production, use the .env URL if available
+  if (envSocketUrl) {
+    return envSocketUrl;
+  }
+
+  // Production fallback
+  return 'https://api.pollstraw.com';
 };
 
 // API Configuration
 export const API_URL = getApiUrl();
 export const SOCKET_URL = getSocketUrl();
+
+// Log API configuration in development
+if (__DEV__) {
+  console.log('🔌 API Configuration:');
+  console.log('  API_URL:', API_URL);
+  console.log('  SOCKET_URL:', SOCKET_URL);
+  console.log('  Platform:', Platform.OS);
+  console.log('  __DEV__:', __DEV__);
+}
 
 // Storage Keys
 export const STORAGE_KEYS = {

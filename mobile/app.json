@@ -48,7 +48,10 @@
               "pathPrefix": "/poll"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -57,7 +60,10 @@
     },
     "extra": {
       "apiUrl": "http://localhost:3000/api",
-      "socketUrl": "http://localhost:3000"
+      "socketUrl": "http://localhost:3000",
+      "eas": {
+        "projectId": "1675c5e3-2b73-461f-908c-eb2a16d62e60"
+      }
     }
   }
 }
