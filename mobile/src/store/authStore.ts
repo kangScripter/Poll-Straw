@@ -9,6 +9,8 @@ interface AuthStore extends AuthState {
   login: (data: LoginInput) => Promise<void>;
   register: (data: RegisterInput) => Promise<void>;
   logout: () => Promise<void>;
+  /** Clear auth state and storage only (no API call). Used when refresh fails. */
+  clearAuth: () => Promise<void>;
   loadAuth: () => Promise<void>;
   setUser: (user: User | null) => void;
 }
@@ -77,20 +79,22 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      // Clear storage
-      await AsyncStorage.multiRemove([
-        STORAGE_KEYS.ACCESS_TOKEN,
-        STORAGE_KEYS.REFRESH_TOKEN,
-        STORAGE_KEYS.USER,
-      ]);
-      
-      set({
-        user: null,
-        accessToken: null,
-        refreshToken: null,
-        isAuthenticated: false,
-      });
+      await get().clearAuth();
     }
+  },
+
+  clearAuth: async () => {
+    await AsyncStorage.multiRemove([
+      STORAGE_KEYS.ACCESS_TOKEN,
+      STORAGE_KEYS.REFRESH_TOKEN,
+      STORAGE_KEYS.USER,
+    ]);
+    set({
+      user: null,
+      accessToken: null,
+      refreshToken: null,
+      isAuthenticated: false,
+    });
   },
 
   loadAuth: async () => {

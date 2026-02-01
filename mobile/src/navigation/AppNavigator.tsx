@@ -132,12 +132,8 @@ const linking: LinkingOptions<RootStackParamList> = {
 
 // Main App Navigator
 export const AppNavigator: React.FC = () => {
-  const { isAuthenticated, isLoading, loadAuth } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
   const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
-
-  useEffect(() => {
-    loadAuth();
-  }, []);
 
   // Handle deep link when app is already open
   useEffect(() => {
@@ -169,10 +165,6 @@ export const AppNavigator: React.FC = () => {
       subscription.remove();
     };
   }, [isAuthenticated]);
-
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
 
   return (
     <NavigationContainer

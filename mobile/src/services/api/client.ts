@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL, STORAGE_KEYS, API_TIMEOUT } from '@/utils/constants';
+import { useAuthStore } from '@/store/authStore';
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
@@ -90,12 +91,8 @@ apiClient.interceptors.response.use(
           return apiClient(originalRequest);
         }
       } catch (refreshError) {
-        // Refresh failed - clear tokens
-        await AsyncStorage.multiRemove([
-          STORAGE_KEYS.ACCESS_TOKEN,
-          STORAGE_KEYS.REFRESH_TOKEN,
-          STORAGE_KEYS.USER,
-        ]);
+        // Refresh failed - clear tokens and auth store so UI shows logged out
+        useAuthStore.getState().clearAuth();
       }
     }
 

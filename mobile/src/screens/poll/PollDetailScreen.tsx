@@ -43,9 +43,15 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
     }
   }, [currentPoll]);
 
-  const handleVote = async (optionId: string) => {
+  // Tapping an option only selects it; use "Cast Your Vote" to submit
+  const handleSelectOption = (optionId: string) => {
+    if (hasVoted && !currentPoll?.allowMultiple) return;
+    setSelectedOptionId(optionId);
+  };
+
+  const handleSubmitVote = async (optionId: string) => {
     if (hasVoted && !currentPoll?.allowMultiple) {
-      Alert.alert('Already Voted', 'You already voted this');
+      Alert.alert('Already Voted', 'You already voted');
       return;
     }
 
@@ -61,17 +67,14 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
       return;
     }
 
-    setSelectedOptionId(optionId);
-
     try {
       await castVote(pollId, optionId);
       setHasVoted(true);
+      setSelectedOptionId(null);
       Alert.alert('Vote Cast!', 'Your vote has been recorded');
     } catch (error: any) {
-      // Extract error message from API response
       const errorMessage = error.response?.data?.error || error.message || 'Failed to cast vote';
       Alert.alert('Error', errorMessage);
-      setSelectedOptionId(null);
     }
   };
 
@@ -144,7 +147,7 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
           showVoteButtons={canVote}
           selectedOptionId={selectedOptionId || undefined}
           realTimeResults={realTimeResults}
-          onVote={handleVote}
+          onVote={handleSelectOption}
         />
 
         {/* Action Buttons */}
@@ -154,7 +157,7 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
               title="Cast Your Vote"
               onPress={() => {
                 if (selectedOptionId) {
-                  handleVote(selectedOptionId);
+                  handleSubmitVote(selectedOptionId);
                 } else {
                   Alert.alert('Select Option', 'Please select an option first');
                 }
