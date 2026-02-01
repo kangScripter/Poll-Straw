@@ -46,7 +46,7 @@ export const ShareScreen: React.FC<ShareScreenProps> = ({ navigation, route }) =
   // Use the API server URL for local development, or production URL for release
   const baseUrl = __DEV__ 
     ? API_URL.replace('/api', '') 
-    : 'https://pollstraw.com';
+    : 'https://api.pollstraw.com';
   const fullUrl = `${baseUrl}/poll/${shareUrl}`;
   const poll = currentPoll;
 

@@ -97,8 +97,24 @@ export const pollService = {
     return this.formatPollWithResults(poll);
   },
 
-  // Get poll by ID
-  async getById(id: string, viewerIdentifier?: string): Promise<PollWithResults> {
+  // Resolve identifier (poll id or shareUrl) to the poll's actual id (for voting, etc.)
+  async resolveIdentifierToPollId(identifier: string): Promise<string> {
+    const byId = await prisma.poll.findUnique({
+      where: { id: identifier },
+      select: { id: true },
+    });
+    if (byId) return byId.id;
+    const byShareUrl = await prisma.poll.findUnique({
+      where: { shareUrl: identifier },
+      select: { id: true },
+    });
+    if (byShareUrl) return byShareUrl.id;
+    throw new AppError('Poll not found', 404);
+  },
+
+  // Get poll by ID or shareUrl (so /api/polls/zPjlp3UW works with share URL)
+  async getById(idOrShareUrl: string, viewerIdentifier?: string): Promise<PollWithResults> {
+    const id = await this.resolveIdentifierToPollId(idOrShareUrl);
     const poll = await prisma.poll.findUnique({
       where: { id },
       include: {

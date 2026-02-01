@@ -209,6 +209,33 @@ export const AppNavigator: React.FC = () => {
               }}
             />
             <Stack.Screen name="MainTabs" component={MainTabNavigator} />
+            <Stack.Screen 
+              name="PollDetail" 
+              component={PollDetailScreen}
+              options={{
+                headerShown: true,
+                headerTitle: 'Poll',
+                headerBackTitle: 'Back',
+              }}
+            />
+            <Stack.Screen 
+              name="Results" 
+              component={ResultsScreen}
+              options={{
+                headerShown: true,
+                headerTitle: 'Results',
+                headerBackTitle: 'Back',
+              }}
+            />
+            <Stack.Screen 
+              name="Share" 
+              component={ShareScreen}
+              options={{
+                headerShown: true,
+                headerTitle: 'Share Poll',
+                headerBackTitle: 'Back',
+              }}
+            />
           </>
         ) : (
           // Main Stack

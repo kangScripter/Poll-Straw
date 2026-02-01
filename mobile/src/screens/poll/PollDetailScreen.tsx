@@ -45,7 +45,7 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
 
   const handleVote = async (optionId: string) => {
     if (hasVoted && !currentPoll?.allowMultiple) {
-      Alert.alert('Already Voted', 'You have already voted on this poll');
+      Alert.alert('Already Voted', 'You already voted this');
       return;
     }
 
@@ -68,7 +68,9 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
       setHasVoted(true);
       Alert.alert('Vote Cast!', 'Your vote has been recorded');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to cast vote');
+      // Extract error message from API response
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to cast vote';
+      Alert.alert('Error', errorMessage);
       setSelectedOptionId(null);
     }
   };

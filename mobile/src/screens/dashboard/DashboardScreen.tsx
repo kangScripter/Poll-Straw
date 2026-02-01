@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePollStore } from '@/store/pollStore';
 import { useAuthStore } from '@/store/authStore';
@@ -33,6 +34,15 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
     }
   }, [isAuthenticated]);
 
+  // Refetch when screen gains focus (e.g. after creating a poll)
+  useFocusEffect(
+    useCallback(() => {
+      if (isAuthenticated) {
+        fetchUserPolls(1);
+      }
+    }, [isAuthenticated])
+  );
+
   const handleRefresh = async () => {
     setRefreshing(true);
     await fetchUserPolls(1);
@@ -50,8 +60,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
   };
 
   const handleCreatePoll = () => {
-    // Navigate to Create tab in tab navigator
-    navigation.navigate('Create');
+    navigation.navigate('CreatePoll');
   };
 
   if (!isAuthenticated) {
@@ -132,16 +141,32 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
       {/* Polls List */}
       {userPolls.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Ionicons name="document-text-outline" size={64} color={colors.gray[400]} />
-          <Text style={styles.emptyTitle}>No Polls Yet</Text>
-          <Text style={styles.emptyDescription}>
-            Create your first poll to get started
-          </Text>
-          <Button
-            title="Create Poll"
-            onPress={handleCreatePoll}
-            size="md"
-          />
+          {error ? (
+            <>
+              <Ionicons name="alert-circle-outline" size={64} color={colors.error} />
+              <Text style={styles.emptyTitle}>Could not load polls</Text>
+              <Text style={styles.emptyDescription}>{error}</Text>
+              <Button
+                title="Retry"
+                onPress={() => fetchUserPolls(1)}
+                variant="outline"
+                size="md"
+              />
+            </>
+          ) : (
+            <>
+              <Ionicons name="document-text-outline" size={64} color={colors.gray[400]} />
+              <Text style={styles.emptyTitle}>No Polls Yet</Text>
+              <Text style={styles.emptyDescription}>
+                Create your first poll to get started
+              </Text>
+              <Button
+                title="Create Poll"
+                onPress={handleCreatePoll}
+                size="md"
+              />
+            </>
+          )}
         </View>
       ) : (
         <FlatList

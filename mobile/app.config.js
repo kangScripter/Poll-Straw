@@ -15,6 +15,18 @@ module.exports = {
       backgroundColor: '#0ea5e9',
     },
     assetBundlePatterns: ['**/*'],
+    plugins: [
+      [
+        'expo-build-properties',
+        {
+          android: {
+            compileSdkVersion: 34,
+            targetSdkVersion: 34,
+            buildToolsVersion: '34.0.0',
+          },
+        },
+      ],
+    ],
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.pollstraw.mobile',
@@ -54,8 +66,8 @@ module.exports = {
       favicon: './assets/favicon.png',
     },
     extra: {
-      apiUrl: process.env.API_URL || 'http://localhost:3000/api',
-      socketUrl: process.env.SOCKET_URL || 'http://localhost:3000',
+      apiUrl: process.env.API_URL || 'http://pollstraw.com/api',
+      socketUrl: process.env.SOCKET_URL || 'http://pollstraw.com',
       eas: {
         projectId: '1675c5e3-2b73-461f-908c-eb2a16d62e60',
       },

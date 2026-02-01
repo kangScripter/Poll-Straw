@@ -77,16 +77,17 @@ export const usePollStore = create<PollStore>((set, get) => ({
   fetchUserPolls: async (page: number = 1) => {
     set({ isLoading: true, error: null });
     try {
-      // Use userApi instead of pollApi for user polls
       const { userApi } = await import('@/services/api/userApi');
       const response = await userApi.getPolls(page);
       if (response.success && response.data) {
         const { data, pagination } = response.data;
         set({
-          userPolls: page === 1 ? data : [...get().userPolls, ...data],
-          userPollsPagination: pagination,
+          userPolls: page === 1 ? (data ?? []) : [...get().userPolls, ...(data ?? [])],
+          userPollsPagination: pagination ?? null,
           isLoading: false,
         });
+      } else {
+        set({ isLoading: false, userPolls: page === 1 ? [] : get().userPolls });
       }
     } catch (error: any) {
       const errorMsg = error.response?.data?.error || error.message || 'Failed to fetch polls';

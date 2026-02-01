@@ -159,8 +159,8 @@ export const authService = {
       throw new AppError('User not found or inactive', 401);
     }
 
-    // Delete old refresh token
-    await prisma.refreshToken.delete({
+    // Delete old refresh token (deleteMany so missing record doesn't throw, e.g. concurrent refresh)
+    await prisma.refreshToken.deleteMany({
       where: { token: refreshToken },
     });
 

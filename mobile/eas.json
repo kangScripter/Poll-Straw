@@ -7,18 +7,24 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "API_URL": "http://localhost:3000/api",
-        "SOCKET_URL": "http://localhost:3000"
+        "API_URL": "http://pollstraw.com/api",
+        "SOCKET_URL": "http://pollstraw.com"
       }
     },
     "preview": {
       "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "API_URL": "https://api.pollstraw.com/api",
         "SOCKET_URL": "https://api.pollstraw.com"
       }
     },
     "production": {
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "API_URL": "https://api.pollstraw.com/api",
         "SOCKET_URL": "https://api.pollstraw.com"

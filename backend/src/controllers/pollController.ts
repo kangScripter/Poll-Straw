@@ -105,10 +105,11 @@ export const pollController = {
     }
   },
 
-  // GET /api/polls/:id/results
+  // GET /api/polls/:id/results (id can be poll id or shareUrl)
   async getResults(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = req.params;
+      const idOrShareUrl = req.params.id;
+      const id = await pollService.resolveIdentifierToPollId(idOrShareUrl);
       const results = await pollService.getResults(id);
 
       res.json({
@@ -128,7 +129,8 @@ export const pollController = {
         return;
       }
 
-      const { id } = req.params;
+      const idOrShareUrl = req.params.id;
+      const id = await pollService.resolveIdentifierToPollId(idOrShareUrl);
       const data = updatePollSchema.parse(req.body);
 
       const poll = await pollService.update(id, req.user.userId, {
@@ -159,7 +161,8 @@ export const pollController = {
         return;
       }
 
-      const { id } = req.params;
+      const idOrShareUrl = req.params.id;
+      const id = await pollService.resolveIdentifierToPollId(idOrShareUrl);
       const isAdmin = req.user.role === 'ADMIN';
 
       await pollService.delete(id, req.user.userId, isAdmin);
@@ -181,7 +184,8 @@ export const pollController = {
         return;
       }
 
-      const { id } = req.params;
+      const idOrShareUrl = req.params.id;
+      const id = await pollService.resolveIdentifierToPollId(idOrShareUrl);
       const poll = await pollService.closePoll(id, req.user.userId);
 
       res.json({

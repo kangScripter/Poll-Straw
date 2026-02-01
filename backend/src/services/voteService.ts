@@ -151,7 +151,7 @@ export const voteService = {
       });
 
       if (existingUserVote) {
-        throw new AppError('You have already voted on this poll', 400);
+        throw new AppError('You already voted this', 400);
       }
     }
 
@@ -160,7 +160,7 @@ export const voteService = {
       // Check Redis cache first (faster)
       const hasVotedRedis = await redisHelpers.hasVoted(poll.id, ipAddress, 'ip');
       if (hasVotedRedis) {
-        throw new AppError('You have already voted on this poll', 400);
+        throw new AppError('You already voted this', 400);
       }
 
       // Check database as fallback
@@ -169,7 +169,7 @@ export const voteService = {
       });
 
       if (existingIpVote) {
-        throw new AppError('You have already voted on this poll', 400);
+        throw new AppError('You already voted this', 400);
       }
     }
 
@@ -177,7 +177,7 @@ export const voteService = {
     if (sessionId) {
       const hasVotedSession = await redisHelpers.hasVoted(poll.id, sessionId, 'session');
       if (hasVotedSession) {
-        throw new AppError('You have already voted on this poll', 400);
+        throw new AppError('You already voted this', 400);
       }
     }
 
@@ -185,7 +185,7 @@ export const voteService = {
     if (deviceId) {
       const hasVotedDevice = await redisHelpers.hasVoted(poll.id, deviceId, 'device');
       if (hasVotedDevice) {
-        throw new AppError('You have already voted on this poll', 400);
+        throw new AppError('You already voted this', 400);
       }
     }
   },
