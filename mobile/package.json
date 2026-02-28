@@ -8,7 +8,10 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "eslint . --ext .ts,.tsx",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+     "build": "npm run db:generate && tsc",
+    "postbuild": "npm run db:migrate"
+
   },
   "dependencies": {
     "@expo/metro-runtime": "~3.2.3",

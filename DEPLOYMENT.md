@@ -164,8 +164,8 @@ eas build:configure
 {
   "expo": {
     "extra": {
-      "apiUrl": "https://api.pollstraw.com/api",
-      "socketUrl": "https://api.pollstraw.com"
+      "apiUrl": "https://apis.pollstraw.com/api",
+      "socketUrl": "https://apis.pollstraw.com"
     }
   }
 }

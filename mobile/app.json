@@ -71,8 +71,8 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "apiUrl": "http://pollstraw.com/api",
-      "socketUrl": "http://pollstraw.com",
+      "apiUrl": "http://apis.pollstraw.com/api",
+      "socketUrl": "http://apis.pollstraw.com",
       "eas": {
         "projectId": "1675c5e3-2b73-461f-908c-eb2a16d62e60"
       }
