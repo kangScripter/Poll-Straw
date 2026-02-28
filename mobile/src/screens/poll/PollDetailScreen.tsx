@@ -27,10 +27,14 @@ type PollDetailScreenProps = {
 
 export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, route }) => {
   const { pollId } = route.params;
-  const { currentPoll, fetchPoll, castVote, isLoading, error } = usePollStore();
-  const { isAuthenticated } = useAuthStore();
+  const { currentPoll, fetchPoll, castVote, deletePoll, closePoll, isLoading, error } = usePollStore();
+  const { isAuthenticated, user } = useAuthStore();
   const { results: realTimeResults, isConnected } = useRealTimeVotes(pollId);
+
+  // Single-select state (allowMultiple: false)
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
+  // Multi-select state (allowMultiple: true)
+  const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
   const [hasVoted, setHasVoted] = useState(false);
 
   useEffect(() => {
@@ -43,19 +47,24 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
     }
   }, [currentPoll]);
 
-  // Tapping an option only selects it; use "Cast Your Vote" to submit
+  const displayPoll = realTimeResults || currentPoll;
+  const isCreator = !!user && displayPoll?.creatorId === user.id;
+
+  // Single-select handler
   const handleSelectOption = (optionId: string) => {
-    if (hasVoted && !currentPoll?.allowMultiple) return;
-    setSelectedOptionId(optionId);
+    if (displayPoll?.allowMultiple) {
+      // Toggle multi-select
+      setSelectedOptionIds((prev) =>
+        prev.includes(optionId) ? prev.filter((id) => id !== optionId) : [...prev, optionId]
+      );
+    } else {
+      if (hasVoted) return;
+      setSelectedOptionId(optionId);
+    }
   };
 
-  const handleSubmitVote = async (optionId: string) => {
-    if (hasVoted && !currentPoll?.allowMultiple) {
-      Alert.alert('Already Voted', 'You already voted');
-      return;
-    }
-
-    if (currentPoll?.requireAuth && !isAuthenticated) {
+  const handleSubmitVote = async () => {
+    if (displayPoll?.requireAuth && !isAuthenticated) {
       Alert.alert(
         'Login Required',
         'You need to be logged in to vote on this poll',
@@ -67,14 +76,40 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
       return;
     }
 
-    try {
-      await castVote(pollId, optionId);
-      setHasVoted(true);
-      setSelectedOptionId(null);
-      Alert.alert('Vote Cast!', 'Your vote has been recorded');
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.error || error.message || 'Failed to cast vote';
-      Alert.alert('Error', errorMessage);
+    if (displayPoll?.allowMultiple) {
+      if (selectedOptionIds.length === 0) {
+        Alert.alert('Select Option', 'Please select at least one option');
+        return;
+      }
+      try {
+        for (const optId of selectedOptionIds) {
+          await castVote(pollId, optId);
+        }
+        setHasVoted(true);
+        setSelectedOptionIds([]);
+        Alert.alert('Vote Cast!', 'Your votes have been recorded');
+      } catch (error: any) {
+        const errorMessage = error.response?.data?.error || error.message || 'Failed to cast vote';
+        Alert.alert('Error', errorMessage);
+      }
+    } else {
+      if (!selectedOptionId) {
+        Alert.alert('Select Option', 'Please select an option first');
+        return;
+      }
+      if (hasVoted) {
+        Alert.alert('Already Voted', 'You already voted');
+        return;
+      }
+      try {
+        await castVote(pollId, selectedOptionId);
+        setHasVoted(true);
+        setSelectedOptionId(null);
+        Alert.alert('Vote Cast!', 'Your vote has been recorded');
+      } catch (error: any) {
+        const errorMessage = error.response?.data?.error || error.message || 'Failed to cast vote';
+        Alert.alert('Error', errorMessage);
+      }
     }
   };
 
@@ -90,7 +125,53 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
     }
   };
 
-  const displayPoll = realTimeResults || currentPoll;
+  const handleEdit = () => {
+    navigation.navigate('EditPoll', { pollId });
+  };
+
+  const handleClose = () => {
+    Alert.alert(
+      'Close Poll',
+      'Are you sure you want to close this poll? Voting will be disabled.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Close Poll',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await closePoll(pollId);
+              Alert.alert('Poll Closed', 'Voting has been disabled for this poll');
+            } catch (error: any) {
+              Alert.alert('Error', error.message || 'Failed to close poll');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDelete = () => {
+    Alert.alert(
+      'Delete Poll',
+      'Are you sure you want to permanently delete this poll? This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deletePoll(pollId);
+              navigation.goBack();
+            } catch (error: any) {
+              Alert.alert('Error', error.message || 'Failed to delete poll');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   if (isLoading && !currentPoll) {
     return (
@@ -126,6 +207,11 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
   const canVote = displayPoll.isActive && (!hasVoted || displayPoll.allowMultiple);
   const showResults = hasVoted || !displayPoll.isActive || displayPoll.showResults === 'ALWAYS';
 
+  // For multi-select: show vote button if any option is selected
+  const canSubmitMulti = displayPoll.allowMultiple && selectedOptionIds.length > 0;
+  // For single-select: show vote button if not yet voted and option selected
+  const canSubmitSingle = !displayPoll.allowMultiple && canVote && !hasVoted && !!selectedOptionId;
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
@@ -145,24 +231,19 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
         <PollCard
           poll={displayPoll}
           showVoteButtons={canVote}
-          selectedOptionId={selectedOptionId || undefined}
+          selectedOptionId={!displayPoll.allowMultiple ? (selectedOptionId || undefined) : undefined}
+          selectedOptionIds={displayPoll.allowMultiple ? selectedOptionIds : undefined}
           realTimeResults={realTimeResults}
           onVote={handleSelectOption}
         />
 
         {/* Action Buttons */}
         <View style={styles.actions}>
-          {canVote && !hasVoted && (
+          {/* Vote submit button */}
+          {canVote && (canSubmitSingle || canSubmitMulti) && (
             <Button
               title="Cast Your Vote"
-              onPress={() => {
-                if (selectedOptionId) {
-                  handleSubmitVote(selectedOptionId);
-                } else {
-                  Alert.alert('Select Option', 'Please select an option first');
-                }
-              }}
-              disabled={!selectedOptionId}
+              onPress={handleSubmitVote}
               size="lg"
             />
           )}
@@ -183,12 +264,45 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
             size="lg"
             leftIcon={<Ionicons name="share-outline" size={20} color={colors.primary[500]} />}
           />
+
+          {/* Creator-only actions */}
+          {isCreator && (
+            <>
+              {displayPoll.totalVotes === 0 && (
+                <Button
+                  title="Edit Poll"
+                  onPress={handleEdit}
+                  variant="outline"
+                  size="lg"
+                  leftIcon={<Ionicons name="create-outline" size={20} color={colors.primary[500]} />}
+                />
+              )}
+
+              {displayPoll.isActive && (
+                <Button
+                  title="Close Poll"
+                  onPress={handleClose}
+                  variant="outline"
+                  size="lg"
+                  leftIcon={<Ionicons name="lock-closed-outline" size={20} color={colors.warning || '#f59e0b'} />}
+                />
+              )}
+
+              <Button
+                title="Delete Poll"
+                onPress={handleDelete}
+                variant="outline"
+                size="lg"
+                leftIcon={<Ionicons name="trash-outline" size={20} color={colors.error} />}
+              />
+            </>
+          )}
         </View>
 
         {/* Poll Info */}
         <View style={styles.infoCard}>
           <Text style={styles.infoTitle}>Poll Information</Text>
-          
+
           <View style={styles.infoRow}>
             <Ionicons name="calendar-outline" size={20} color={colors.gray[500]} />
             <Text style={styles.infoText}>
@@ -218,6 +332,13 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
               {displayPoll.totalVotes} {displayPoll.totalVotes === 1 ? 'vote' : 'votes'}
             </Text>
           </View>
+
+          {displayPoll.allowMultiple && (
+            <View style={styles.infoRow}>
+              <Ionicons name="checkbox-outline" size={20} color={colors.primary[500]} />
+              <Text style={styles.infoText}>Multiple options allowed</Text>
+            </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

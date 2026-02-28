@@ -98,8 +98,37 @@ export const CreatePollScreen: React.FC<CreatePollScreenProps> = ({ navigation }
     return true;
   };
 
+  const resetForm = () => {
+    setTitle('');
+    setDescription('');
+    setOptions([
+      { id: '1', text: '', emoji: '' },
+      { id: '2', text: '', emoji: '' },
+    ]);
+    setAllowMultiple(false);
+    setRequireAuth(false);
+    setShowResults('ALWAYS');
+    setDeadline('');
+    setIpRestriction(true);
+  };
+
   const handleCreate = async () => {
     if (!validateForm()) return;
+
+    // Convert deadline to ISO 8601 if provided
+    let isoDeadline: string | undefined;
+    if (deadline.trim()) {
+      const parsed = new Date(deadline.trim());
+      if (isNaN(parsed.getTime())) {
+        Alert.alert('Invalid Deadline', 'Please use format YYYY-MM-DD HH:MM (e.g., 2026-12-01 18:00)');
+        return;
+      }
+      if (parsed <= new Date()) {
+        Alert.alert('Invalid Deadline', 'Deadline must be set in the future');
+        return;
+      }
+      isoDeadline = parsed.toISOString();
+    }
 
     try {
       const validOptions = options
@@ -117,21 +146,22 @@ export const CreatePollScreen: React.FC<CreatePollScreenProps> = ({ navigation }
           allowMultiple,
           requireAuth,
           showResults,
-          deadline: deadline || undefined,
+          deadline: isoDeadline,
           ipRestriction,
         },
       };
 
       const poll = await createPoll(pollData);
-      
+
+      // Reset form immediately after success
+      resetForm();
+
       // Helper to navigate to stack screens (works from both tab and stack contexts)
       const navigateToStack = (screen: string, params?: any) => {
         const parent = navigation.getParent();
         if (parent) {
-          // We're in a tab navigator, use parent
           parent.navigate(screen as any, params);
         } else {
-          // We're already in stack navigator
           navigation.navigate(screen as any, params);
         }
       };
@@ -148,6 +178,7 @@ export const CreatePollScreen: React.FC<CreatePollScreenProps> = ({ navigation }
             text: 'View Poll',
             onPress: () => navigateToStack('PollDetail', { pollId: poll.id }),
           },
+          { text: 'Create Another', style: 'cancel' },
         ]
       );
     } catch (error: any) {
@@ -173,7 +204,7 @@ export const CreatePollScreen: React.FC<CreatePollScreenProps> = ({ navigation }
               placeholder="What would you like to ask?"
               value={title}
               onChangeText={setTitle}
-              maxLength={200}
+              maxLength={500}
               multiline
               numberOfLines={3}
             />

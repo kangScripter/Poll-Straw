@@ -7,7 +7,7 @@ import { ResultVisibility } from '@prisma/client';
 
 // Validation schemas
 const createPollSchema = z.object({
-  title: z.string().min(3, 'Title must be at least 3 characters').max(200),
+  title: z.string().min(3, 'Title must be at least 3 characters').max(500),
   description: z.string().max(1000).optional(),
   options: z
     .array(
@@ -31,7 +31,7 @@ const createPollSchema = z.object({
 });
 
 const updatePollSchema = z.object({
-  title: z.string().min(3).max(200).optional(),
+  title: z.string().min(3).max(500).optional(),
   description: z.string().max(1000).optional(),
   settings: z
     .object({

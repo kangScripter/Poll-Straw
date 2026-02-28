@@ -23,6 +23,7 @@ export interface PollWithResults {
   id: string;
   title: string;
   description: string | null;
+  creatorId: string | null;
   options: {
     id: string;
     text: string;
@@ -136,10 +137,12 @@ export const pollService = {
 
     const result = this.formatPollWithResults(poll);
 
-    // Check if viewer has voted
-    if (viewerIdentifier) {
+    // Check if viewer has voted (skip when IP is unknown so shared/NAT users can still vote)
+    if (viewerIdentifier && viewerIdentifier !== 'unknown' && viewerIdentifier.trim() !== '') {
       const hasVoted = await redisHelpers.hasVoted(id, viewerIdentifier, 'ip');
       result.hasVoted = hasVoted;
+    } else {
+      result.hasVoted = false;
     }
 
     return result;
@@ -168,10 +171,12 @@ export const pollService = {
 
     const result = this.formatPollWithResults(poll);
 
-    // Check if viewer has voted
-    if (viewerIdentifier) {
+    // Check if viewer has voted (skip when IP is unknown so shared/NAT users can still vote)
+    if (viewerIdentifier && viewerIdentifier !== 'unknown' && viewerIdentifier.trim() !== '') {
       const hasVoted = await redisHelpers.hasVoted(poll.id, viewerIdentifier, 'ip');
       result.hasVoted = hasVoted;
+    } else {
+      result.hasVoted = false;
     }
 
     return result;
@@ -329,6 +334,7 @@ export const pollService = {
       id: poll.id,
       title: poll.title,
       description: poll.description,
+      creatorId: poll.creatorId ?? null,
       options: poll.options.map((opt: any) => ({
         id: opt.id,
         text: opt.text,

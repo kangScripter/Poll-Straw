@@ -23,6 +23,7 @@ import { ShareScreen } from '@/screens/poll/ShareScreen';
 import { DashboardScreen } from '@/screens/dashboard/DashboardScreen';
 import { ProfileScreen } from '@/screens/profile/ProfileScreen';
 import { EditProfileScreen } from '@/screens/profile/EditProfileScreen';
+import { EditPollScreen } from '@/screens/poll/EditPollScreen';
 import { AdminDashboardScreen } from '@/screens/admin/AdminDashboardScreen';
 import { AdminModerationScreen } from '@/screens/admin/AdminModerationScreen';
 import { AdminUsersScreen } from '@/screens/admin/AdminUsersScreen';
@@ -270,12 +271,21 @@ export const AppNavigator: React.FC = () => {
                 headerBackTitle: 'Back',
               }}
             />
-            <Stack.Screen 
-              name="EditProfile" 
+            <Stack.Screen
+              name="EditProfile"
               component={EditProfileScreen}
               options={{
                 headerShown: true,
                 headerTitle: 'Edit Profile',
+                headerBackTitle: 'Back',
+              }}
+            />
+            <Stack.Screen
+              name="EditPoll"
+              component={EditPollScreen}
+              options={{
+                headerShown: true,
+                headerTitle: 'Edit Poll',
                 headerBackTitle: 'Back',
               }}
             />

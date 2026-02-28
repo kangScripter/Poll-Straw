@@ -37,7 +37,11 @@ export const usePollStore = create<PollStore>((set, get) => ({
       const response = await pollApi.create(data);
       if (response.success && response.data) {
         const poll = response.data.poll;
-        set({ currentPoll: poll, isLoading: false });
+        set((state) => ({
+          currentPoll: poll,
+          userPolls: [poll, ...state.userPolls],
+          isLoading: false,
+        }));
         return poll;
       }
       throw new Error('Failed to create poll');

@@ -114,3 +114,43 @@ export const authorize = (...roles: Role[]) => {
 
 // Admin only middleware
 export const adminOnly = authorize(Role.ADMIN);
+
+// Poll creator or admin — verifies the requesting user is either an admin or the creator of the poll
+export const creatorOrAdmin = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, error: 'Authentication required' });
+      return;
+    }
+
+    if (req.user.role === Role.ADMIN) {
+      return next();
+    }
+
+    const pollId = req.params.id || req.params.pollId;
+    const poll = await prisma.poll.findFirst({
+      where: {
+        OR: [{ id: pollId }, { shareUrl: pollId }],
+      },
+      select: { creatorId: true },
+    });
+
+    if (!poll) {
+      res.status(404).json({ success: false, error: 'Poll not found' });
+      return;
+    }
+
+    if (poll.creatorId !== req.user.userId) {
+      res.status(403).json({ success: false, error: 'Insufficient permissions' });
+      return;
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+};

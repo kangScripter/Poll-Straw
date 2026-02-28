@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PollOption as PollOptionType } from '@/types';
 import { colors } from '@/theme/colors';
@@ -8,6 +8,7 @@ interface PollOptionProps {
   option: PollOptionType;
   showResults: boolean;
   isSelected?: boolean;
+  isCheckbox?: boolean;
   onPress?: () => void;
 }
 
@@ -15,6 +16,7 @@ export const PollOption: React.FC<PollOptionProps> = ({
   option,
   showResults,
   isSelected = false,
+  isCheckbox = false,
   onPress,
 }) => {
   const isInteractive = !!onPress;
@@ -45,13 +47,21 @@ export const PollOption: React.FC<PollOptionProps> = ({
       {/* Content */}
       <View style={styles.content}>
         <View style={styles.leftContent}>
-          {/* Selection indicator */}
+          {/* Selection indicator — radio for single-select, checkbox for multi-select */}
           {isInteractive && (
-            <View style={[styles.radio, isSelected && styles.radioSelected]}>
-              {isSelected && (
-                <View style={styles.radioInner} />
-              )}
-            </View>
+            isCheckbox ? (
+              <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+                {isSelected && (
+                  <Ionicons name="checkmark" size={14} color={colors.white} />
+                )}
+              </View>
+            ) : (
+              <View style={[styles.radio, isSelected && styles.radioSelected]}>
+                {isSelected && (
+                  <View style={styles.radioInner} />
+                )}
+              </View>
+            )
           )}
 
           {/* Emoji */}
@@ -138,6 +148,19 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
+    backgroundColor: colors.primary[500],
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: colors.gray[300],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxSelected: {
+    borderColor: colors.primary[500],
     backgroundColor: colors.primary[500],
   },
   emoji: {

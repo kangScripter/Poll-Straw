@@ -27,6 +27,7 @@ export interface Poll {
   id: string;
   title: string;
   description: string | null;
+  creatorId: string | null;
   options: PollOption[];
   totalVotes: number;
   viewCount: number;
@@ -102,7 +103,8 @@ export type RootStackParamList = {
   Vote: { pollId: string };
   Results: { pollId: string };
   Share: { pollId: string; shareUrl: string };
-  
+  EditPoll: { pollId: string };
+
   // User screens
   Profile: undefined;
   EditProfile: undefined;

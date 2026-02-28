@@ -140,8 +140,8 @@ model Vote {
   // Timestamps
   createdAt DateTime    @default(now())
   
-  @@unique([pollId, ipAddress])
-  @@unique([pollId, userId])
+  @@unique([pollId, optionId, userId])
+  @@index([pollId, ipAddress])
   @@index([pollId])
   @@index([optionId])
   @@index([createdAt])

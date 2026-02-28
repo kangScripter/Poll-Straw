@@ -11,6 +11,7 @@ export interface CastVoteInput {
   ipAddress?: string;
   sessionId?: string;
   deviceId?: string;
+  allowMultiple?: boolean;
 }
 
 export interface VoteResult {
@@ -62,10 +63,9 @@ export const voteService = {
       throw new AppError('Authentication required to vote', 401);
     }
 
-    // Check for duplicate votes (only if allowMultiple is false)
-    if (!poll.allowMultiple) {
-      await this.checkDuplicateVote(poll, { userId, ipAddress, sessionId, deviceId });
-    }
+    // Check for duplicate votes
+    // allowMultiple: check per-option; single-vote: check per-poll
+    await this.checkDuplicateVote(poll, { userId, ipAddress, sessionId, deviceId, optionId });
 
     // Create vote in transaction
     const vote = await prisma.$transaction(async (tx) => {
@@ -101,14 +101,16 @@ export const voteService = {
     });
 
     // Mark as voted in Redis for duplicate prevention
+    // For allowMultiple polls, scope the key to the specific option
+    const redisCacheKey = poll.allowMultiple ? `${pollId}:${optionId}` : pollId;
     if (ipAddress && poll.ipRestriction) {
-      await redisHelpers.markVoted(pollId, ipAddress, 'ip', 86400); // 24 hours
+      await redisHelpers.markVoted(redisCacheKey, ipAddress, 'ip', 86400); // 24 hours
     }
     if (sessionId) {
-      await redisHelpers.markVoted(pollId, sessionId, 'session', 86400);
+      await redisHelpers.markVoted(redisCacheKey, sessionId, 'session', 86400);
     }
     if (deviceId) {
-      await redisHelpers.markVoted(pollId, deviceId, 'device', 86400);
+      await redisHelpers.markVoted(redisCacheKey, deviceId, 'device', 86400);
     }
 
     // Invalidate cache
@@ -140,52 +142,62 @@ export const voteService = {
       ipAddress?: string;
       sessionId?: string;
       deviceId?: string;
+      optionId?: string;
     }
   ): Promise<void> {
-    const { userId, ipAddress, sessionId, deviceId } = identifiers;
+    const { userId, ipAddress, sessionId, deviceId, optionId } = identifiers;
+    const allowMultiple = poll.allowMultiple as boolean;
+
+    // For allowMultiple polls: check per-option uniqueness (same user/IP can't vote for the same option twice)
+    // For single-vote polls: check per-poll uniqueness (same user/IP can't vote at all)
+    const pollScope = allowMultiple ? { pollId: poll.id, optionId } : { pollId: poll.id };
+    const ipScope = allowMultiple ? { pollId: poll.id, optionId, ipAddress } : { pollId: poll.id, ipAddress };
 
     // Check user-based restriction
     if (userId) {
       const existingUserVote = await prisma.vote.findFirst({
-        where: { pollId: poll.id, userId },
+        where: { ...pollScope, userId },
       });
 
       if (existingUserVote) {
-        throw new AppError('You already voted this', 400);
+        throw new AppError(allowMultiple ? 'You already voted for this option' : 'You already voted this', 400);
       }
     }
 
-    // Check IP-based restriction
+    // Check IP-based restriction (only if ipRestriction enabled)
     if (poll.ipRestriction && ipAddress) {
-      // Check Redis cache first (faster)
-      const hasVotedRedis = await redisHelpers.hasVoted(poll.id, ipAddress, 'ip');
+      // Check Redis cache first (faster); key is scoped to poll+option when allowMultiple
+      const cacheKey = allowMultiple ? `${poll.id}:${optionId}` : poll.id;
+      const hasVotedRedis = await redisHelpers.hasVoted(cacheKey, ipAddress, 'ip');
       if (hasVotedRedis) {
-        throw new AppError('You already voted this', 400);
+        throw new AppError(allowMultiple ? 'You already voted for this option' : 'You already voted this', 400);
       }
 
       // Check database as fallback
       const existingIpVote = await prisma.vote.findFirst({
-        where: { pollId: poll.id, ipAddress },
+        where: { ...ipScope },
       });
 
       if (existingIpVote) {
-        throw new AppError('You already voted this', 400);
+        throw new AppError(allowMultiple ? 'You already voted for this option' : 'You already voted this', 400);
       }
     }
 
     // Check session-based restriction
     if (sessionId) {
-      const hasVotedSession = await redisHelpers.hasVoted(poll.id, sessionId, 'session');
+      const cacheKey = allowMultiple ? `${poll.id}:${optionId}` : poll.id;
+      const hasVotedSession = await redisHelpers.hasVoted(cacheKey, sessionId, 'session');
       if (hasVotedSession) {
-        throw new AppError('You already voted this', 400);
+        throw new AppError(allowMultiple ? 'You already voted for this option' : 'You already voted this', 400);
       }
     }
 
     // Check device-based restriction
     if (deviceId) {
-      const hasVotedDevice = await redisHelpers.hasVoted(poll.id, deviceId, 'device');
+      const cacheKey = allowMultiple ? `${poll.id}:${optionId}` : poll.id;
+      const hasVotedDevice = await redisHelpers.hasVoted(cacheKey, deviceId, 'device');
       if (hasVotedDevice) {
-        throw new AppError('You already voted this', 400);
+        throw new AppError(allowMultiple ? 'You already voted for this option' : 'You already voted this', 400);
       }
     }
   },

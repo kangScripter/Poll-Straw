@@ -11,6 +11,7 @@ interface PollCardProps {
   onVote?: (optionId: string) => void;
   showVoteButtons?: boolean;
   selectedOptionId?: string;
+  selectedOptionIds?: string[];
   realTimeResults?: Poll | null;
 }
 
@@ -20,6 +21,7 @@ export const PollCard: React.FC<PollCardProps> = ({
   onVote,
   showVoteButtons = false,
   selectedOptionId,
+  selectedOptionIds,
   realTimeResults,
 }) => {
   const displayPoll = realTimeResults || poll;
@@ -73,15 +75,21 @@ export const PollCard: React.FC<PollCardProps> = ({
 
       {/* Options */}
       <View style={styles.options}>
-        {displayPoll.options.map((option) => (
-          <PollOption
-            key={option.id}
-            option={option}
-            showResults={displayPoll.hasVoted || !isActive}
-            isSelected={selectedOptionId === option.id}
-            onPress={showVoteButtons && isActive ? () => onVote?.(option.id) : undefined}
-          />
-        ))}
+        {displayPoll.options.map((option) => {
+          const isSelected = selectedOptionIds
+            ? selectedOptionIds.includes(option.id)
+            : selectedOptionId === option.id;
+          return (
+            <PollOption
+              key={option.id}
+              option={option}
+              showResults={displayPoll.hasVoted || !isActive}
+              isSelected={isSelected}
+              isCheckbox={!!selectedOptionIds}
+              onPress={showVoteButtons && isActive ? () => onVote?.(option.id) : undefined}
+            />
+          );
+        })}
       </View>
 
       {/* Footer */}
