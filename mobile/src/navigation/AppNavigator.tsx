@@ -201,9 +201,9 @@ export const AppNavigator: React.FC = () => {
                 headerBackTitle: 'Back',
               }}
             />
-            <Stack.Screen name="MainTabs" component={MainTabNavigator} />
-            <Stack.Screen 
-              name="PollDetail" 
+            {/* Guest-accessible poll screens (via deep links) */}
+            <Stack.Screen
+              name="PollDetail"
               component={PollDetailScreen}
               options={{
                 headerShown: true,
@@ -211,8 +211,8 @@ export const AppNavigator: React.FC = () => {
                 headerBackTitle: 'Back',
               }}
             />
-            <Stack.Screen 
-              name="Results" 
+            <Stack.Screen
+              name="Results"
               component={ResultsScreen}
               options={{
                 headerShown: true,
@@ -220,8 +220,8 @@ export const AppNavigator: React.FC = () => {
                 headerBackTitle: 'Back',
               }}
             />
-            <Stack.Screen 
-              name="Share" 
+            <Stack.Screen
+              name="Share"
               component={ShareScreen}
               options={{
                 headerShown: true,

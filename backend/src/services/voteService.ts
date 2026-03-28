@@ -165,7 +165,11 @@ export const voteService = {
     }
 
     // Check IP-based restriction (only if ipRestriction enabled)
-    if (poll.ipRestriction && ipAddress) {
+    if (poll.ipRestriction) {
+      if (!ipAddress || ipAddress === 'unknown') {
+        throw new AppError('Cannot verify your identity to prevent duplicate votes', 403);
+      }
+
       // Check Redis cache first (faster); key is scoped to poll+option when allowMultiple
       const cacheKey = allowMultiple ? `${poll.id}:${optionId}` : poll.id;
       const hasVotedRedis = await redisHelpers.hasVoted(cacheKey, ipAddress, 'ip');
@@ -276,5 +280,20 @@ export const voteService = {
 
     // Invalidate cache
     await redisHelpers.invalidateResults(pollId);
+
+    // Clear duplicate-check Redis keys so the voter can vote again
+    const redisCacheKey = `${pollId}:${vote.optionId}`;
+    if (vote.ipAddress) {
+      await redisHelpers.removeVoted(pollId, vote.ipAddress, 'ip');
+      await redisHelpers.removeVoted(redisCacheKey, vote.ipAddress, 'ip');
+    }
+    if (vote.sessionId) {
+      await redisHelpers.removeVoted(pollId, vote.sessionId, 'session');
+      await redisHelpers.removeVoted(redisCacheKey, vote.sessionId, 'session');
+    }
+    if (vote.deviceId) {
+      await redisHelpers.removeVoted(pollId, vote.deviceId, 'device');
+      await redisHelpers.removeVoted(redisCacheKey, vote.deviceId, 'device');
+    }
   },
 };

@@ -19,10 +19,10 @@ export const initializeSocket = (httpServer: HttpServer): Server => {
   io.on('connection', (socket: Socket) => {
     console.log(`📱 Client connected: ${socket.id}`);
 
-    // Join poll room
+    // Join poll room (B17: validate pollId format)
     socket.on('join-poll', (data: { pollId: string }) => {
       const { pollId } = data;
-      if (pollId) {
+      if (pollId && typeof pollId === 'string' && pollId.length < 50 && /^[a-zA-Z0-9_-]+$/.test(pollId)) {
         socket.join(`poll:${pollId}`);
         console.log(`👀 Client ${socket.id} joined poll: ${pollId}`);
       }
@@ -48,8 +48,10 @@ export const initializeSocket = (httpServer: HttpServer): Server => {
     });
   });
 
-  // Subscribe to Redis pub/sub for real-time updates
-  setupRedisPubSub();
+  // Subscribe to Redis pub/sub for real-time updates (B8: handle async errors)
+  setupRedisPubSub().catch((err) => {
+    console.error('❌ Fatal: Redis pub/sub setup failed:', err);
+  });
 
   console.log('✅ Socket.io initialized');
 

@@ -44,6 +44,12 @@ export const pollApi = {
     return response.data;
   },
 
+  // Get recent public polls
+  async getRecent(): Promise<ApiResponse<{ polls: Poll[] }>> {
+    const response = await apiClient.get('/polls/recent');
+    return response.data;
+  },
+
   // Cast vote
   async vote(pollId: string, optionId: string, sessionId?: string, deviceId?: string): Promise<ApiResponse<VoteResult>> {
     const response = await apiClient.post(`/polls/${pollId}/vote`, {

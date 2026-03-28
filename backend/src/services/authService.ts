@@ -4,6 +4,7 @@ import { prisma } from '../config/database.js';
 import { generateTokens, verifyRefreshToken, getRefreshTokenExpiry, Tokens } from '../utils/jwt.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { Role } from '@prisma/client';
+import { emailService } from './emailService.js';
 
 export interface RegisterInput {
   email: string;
@@ -225,15 +226,14 @@ export const authService = {
   },
 
   // Request password reset
-  async requestPasswordReset(email: string): Promise<{ token: string }> {
+  async requestPasswordReset(email: string): Promise<{ message: string }> {
     const user = await prisma.user.findUnique({
       where: { email: email.toLowerCase() },
     });
 
     // Don't reveal if user exists (security best practice)
     if (!user) {
-      // Still return success to prevent email enumeration
-      return { token: 'dummy' };
+      return { message: 'If that email exists, a reset link has been sent' };
     }
 
     // Generate reset token
@@ -256,12 +256,10 @@ export const authService = {
       },
     });
 
-    // TODO: Send email with reset link
-    // For now, we'll return the token (in production, send via email)
-    console.log(`Password reset token for ${user.email}: ${resetToken}`);
-    console.log(`Reset URL: ${process.env.FRONTEND_URL || 'http://localhost:8081'}/reset-password?token=${resetToken}`);
+    // Send password reset email
+    await emailService.sendPasswordResetEmail(user.email, resetToken);
 
-    return { token: resetToken };
+    return { message: 'If that email exists, a reset link has been sent' };
   },
 
     // Reset password with token

@@ -47,15 +47,9 @@ export const useRealTimeVotes = (pollId: string | null): UseRealTimeVotesReturn 
       setIsConnected(false);
     });
 
-    // Vote update handler
+    // Vote update handler (backend only emits 'vote-update')
     newSocket.on('vote-update', (data: Poll) => {
       console.log('📊 Vote update received');
-      setResults(data);
-    });
-
-    // Results update handler
-    newSocket.on('results-update', (data: Poll) => {
-      console.log('📊 Results update received');
       setResults(data);
     });
 

@@ -12,13 +12,15 @@
     "postinstall": "npm run db:generate",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
+    "db:push:test": "node -e \"require('dotenv').config({path:'.env.test'}); require('child_process').execSync('npx prisma db push', {stdio:'inherit', env:process.env})\"",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "admin:promote": "tsx scripts/promote-to-admin.ts",
     "admin:create": "tsx scripts/create-admin.ts",
     "lint": "eslint src --ext .ts",
-    "test": "jest"
+    "test": "jest --config jest.config.cjs",
+    "load-test": "node scripts/run-load-test.cjs"
   },
   "dependencies": {
     "@prisma/client": "^5.9.0",
@@ -31,6 +33,7 @@
     "ioredis": "^5.3.2",
     "jsonwebtoken": "^9.0.2",
     "nanoid": "^5.0.4",
+    "nodemailer": "^8.0.4",
     "socket.io": "^4.7.4",
     "zod": "^3.22.4"
   },
@@ -38,9 +41,16 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.12",
     "@types/jsonwebtoken": "^9.0.5",
     "@types/node": "^20.11.5",
+    "@types/nodemailer": "^7.0.11",
+    "@types/supertest": "^6.0.2",
+    "jest": "^29.7.0",
     "prisma": "^5.9.0",
+    "socket.io-client": "^4.7.4",
+    "supertest": "^7.0.0",
+    "ts-jest": "^29.1.2",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3"
   },

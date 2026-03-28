@@ -29,7 +29,7 @@ const CHART_HEIGHT = 300;
 
 export const ResultsScreen: React.FC<ResultsScreenProps> = ({ navigation, route }) => {
   const { pollId } = route.params;
-  const { currentPoll, fetchPoll, getResults } = usePollStore();
+  const { currentPoll, fetchPoll } = usePollStore();
   const { results: realTimeResults, isConnected } = useRealTimeVotes(pollId);
   const [chartType, setChartType] = useState<'bar' | 'pie'>('bar');
 

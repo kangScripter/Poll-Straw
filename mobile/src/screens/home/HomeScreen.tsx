@@ -1,9 +1,9 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  FlatList,
+  ScrollView,
   RefreshControl,
   TouchableOpacity,
   TextInput,
@@ -28,7 +28,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [isSearching, setIsSearching] = useState(false);
 
   const { isAuthenticated, user } = useAuthStore();
-  const { fetchPollByShareUrl, currentPoll, isLoading, error } = usePollStore();
+  const { fetchPollByShareUrl, fetchRecentPolls, recentPolls, currentPoll, isLoading, error } = usePollStore();
+
+  useEffect(() => {
+    fetchRecentPolls();
+  }, []);
+
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await fetchRecentPolls();
+    setIsRefreshing(false);
+  }, []);
 
   const handleSearch = async () => {
     if (!shareUrl.trim()) return;
@@ -53,107 +63,127 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     navigation.navigate('PollDetail', { pollId: poll.id });
   };
 
-  // Example recent polls (in real app, these would come from API)
-  const recentPolls: Poll[] = [];
-
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>
-            {isAuthenticated ? `Hello, ${user?.name || 'there'}!` : 'Welcome!'}
-          </Text>
-          <Text style={styles.subtitle}>Create or join a poll</Text>
-        </View>
-        {isAuthenticated && (
-          <TouchableOpacity
-            style={styles.profileButton}
-            onPress={() => navigation.navigate('Profile')}
-          >
-            <Ionicons name="person-circle-outline" size={32} color={colors.primary[500]} />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Search / Join Poll */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchInputContainer}>
-          <Ionicons name="link-outline" size={20} color={colors.gray[400]} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Enter poll code or URL"
-            placeholderTextColor={colors.gray[400]}
-            value={shareUrl}
-            onChangeText={setShareUrl}
-            onSubmitEditing={handleSearch}
-            autoCapitalize="none"
-          />
-        </View>
-        <TouchableOpacity
-          style={styles.searchButton}
-          onPress={handleSearch}
-          disabled={isSearching || !shareUrl.trim()}
-        >
-          <Ionicons name="arrow-forward" size={24} color={colors.white} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Create Poll CTA */}
-      <View style={styles.createSection}>
-        <View style={styles.createCard}>
-          <View style={styles.createCardContent}>
-            <View style={styles.createIconContainer}>
-              <Ionicons name="add-circle" size={48} color={colors.primary[500]} />
-            </View>
-            <Text style={styles.createTitle}>Create a Poll</Text>
-            <Text style={styles.createDescription}>
-              Ask a question, add options, and share with anyone
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+        }
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.greeting}>
+              {isAuthenticated ? `Hello, ${user?.name || 'there'}!` : 'Welcome!'}
             </Text>
-            <Button
-              title="Create Poll"
-              onPress={handleCreatePoll}
-              size="md"
+            <Text style={styles.subtitle}>Create or join a poll</Text>
+          </View>
+          {isAuthenticated && (
+            <TouchableOpacity
+              style={styles.profileButton}
+              onPress={() => navigation.navigate('Profile')}
+            >
+              <Ionicons name="person-circle-outline" size={32} color={colors.primary[500]} />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Search / Join Poll */}
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputContainer}>
+            <Ionicons name="link-outline" size={20} color={colors.gray[400]} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Enter poll code or URL"
+              placeholderTextColor={colors.gray[400]}
+              value={shareUrl}
+              onChangeText={setShareUrl}
+              onSubmitEditing={handleSearch}
+              autoCapitalize="none"
             />
           </View>
+          <TouchableOpacity
+            style={styles.searchButton}
+            onPress={handleSearch}
+            disabled={isSearching || !shareUrl.trim()}
+          >
+            <Ionicons name="arrow-forward" size={24} color={colors.white} />
+          </TouchableOpacity>
         </View>
-      </View>
 
-      {/* Features */}
-      <View style={styles.features}>
-        <Text style={styles.featuresTitle}>Why PollStraw?</Text>
-        <View style={styles.featuresList}>
-          <View style={styles.featureItem}>
-            <View style={[styles.featureIcon, { backgroundColor: colors.primary[50] }]}>
-              <Ionicons name="flash" size={20} color={colors.primary[500]} />
-            </View>
-            <View style={styles.featureText}>
-              <Text style={styles.featureTitle}>Real-time Results</Text>
-              <Text style={styles.featureDescription}>Watch votes come in live</Text>
-            </View>
-          </View>
-
-          <View style={styles.featureItem}>
-            <View style={[styles.featureIcon, { backgroundColor: colors.secondary[50] }]}>
-              <Ionicons name="share-social" size={20} color={colors.secondary[500]} />
-            </View>
-            <View style={styles.featureText}>
-              <Text style={styles.featureTitle}>Easy Sharing</Text>
-              <Text style={styles.featureDescription}>Share via link or QR code</Text>
-            </View>
-          </View>
-
-          <View style={styles.featureItem}>
-            <View style={[styles.featureIcon, { backgroundColor: colors.success + '20' }]}>
-              <Ionicons name="shield-checkmark" size={20} color={colors.success} />
-            </View>
-            <View style={styles.featureText}>
-              <Text style={styles.featureTitle}>Vote Protection</Text>
-              <Text style={styles.featureDescription}>Prevent duplicate votes</Text>
+        {/* Create Poll CTA */}
+        <View style={styles.createSection}>
+          <View style={styles.createCard}>
+            <View style={styles.createCardContent}>
+              <View style={styles.createIconContainer}>
+                <Ionicons name="add-circle" size={48} color={colors.primary[500]} />
+              </View>
+              <Text style={styles.createTitle}>Create a Poll</Text>
+              <Text style={styles.createDescription}>
+                Ask a question, add options, and share with anyone
+              </Text>
+              <Button
+                title="Create Poll"
+                onPress={handleCreatePoll}
+                size="md"
+              />
             </View>
           </View>
         </View>
-      </View>
+
+        {/* Recent Polls */}
+        {recentPolls.length > 0 && (
+          <View style={styles.recentSection}>
+            <Text style={styles.recentTitle}>Recent Polls</Text>
+            {recentPolls.map((poll) => (
+              <TouchableOpacity
+                key={poll.id}
+                onPress={() => handlePollPress(poll)}
+              >
+                <PollCard poll={poll} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {/* Features */}
+        <View style={styles.features}>
+          <Text style={styles.featuresTitle}>Why PollStraw?</Text>
+          <View style={styles.featuresList}>
+            <View style={styles.featureItem}>
+              <View style={[styles.featureIcon, { backgroundColor: colors.primary[50] }]}>
+                <Ionicons name="flash" size={20} color={colors.primary[500]} />
+              </View>
+              <View style={styles.featureText}>
+                <Text style={styles.featureTitle}>Real-time Results</Text>
+                <Text style={styles.featureDescription}>Watch votes come in live</Text>
+              </View>
+            </View>
+
+            <View style={styles.featureItem}>
+              <View style={[styles.featureIcon, { backgroundColor: colors.secondary[50] }]}>
+                <Ionicons name="share-social" size={20} color={colors.secondary[500]} />
+              </View>
+              <View style={styles.featureText}>
+                <Text style={styles.featureTitle}>Easy Sharing</Text>
+                <Text style={styles.featureDescription}>Share via link or QR code</Text>
+              </View>
+            </View>
+
+            <View style={styles.featureItem}>
+              <View style={[styles.featureIcon, { backgroundColor: colors.success + '20' }]}>
+                <Ionicons name="shield-checkmark" size={20} color={colors.success} />
+              </View>
+              <View style={styles.featureText}>
+                <Text style={styles.featureTitle}>Vote Protection</Text>
+                <Text style={styles.featureDescription}>Prevent duplicate votes</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -162,6 +192,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.gray[50],
+  },
+  scrollContent: {
+    paddingBottom: 24,
   },
   header: {
     flexDirection: 'row',
@@ -246,6 +279,17 @@ const styles = StyleSheet.create({
     color: colors.gray[500],
     textAlign: 'center',
     marginBottom: 20,
+  },
+  recentSection: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+    gap: 12,
+  },
+  recentTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.gray[900],
+    marginBottom: 4,
   },
   features: {
     paddingHorizontal: 20,

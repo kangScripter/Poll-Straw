@@ -36,8 +36,10 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
   // Multi-select state (allowMultiple: true)
   const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
   const [hasVoted, setHasVoted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    if (!pollId) { navigation.goBack(); return; }
     fetchPoll(pollId);
   }, [pollId]);
 
@@ -64,6 +66,8 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
   };
 
   const handleSubmitVote = async () => {
+    if (isSubmitting) return;
+
     if (displayPoll?.requireAuth && !isAuthenticated) {
       Alert.alert(
         'Login Required',
@@ -76,40 +80,38 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
       return;
     }
 
-    if (displayPoll?.allowMultiple) {
-      if (selectedOptionIds.length === 0) {
-        Alert.alert('Select Option', 'Please select at least one option');
-        return;
-      }
-      try {
+    setIsSubmitting(true);
+    try {
+      if (displayPoll?.allowMultiple) {
+        if (selectedOptionIds.length === 0) {
+          Alert.alert('Select Option', 'Please select at least one option');
+          return;
+        }
         for (const optId of selectedOptionIds) {
           await castVote(pollId, optId);
         }
         setHasVoted(true);
         setSelectedOptionIds([]);
         Alert.alert('Vote Cast!', 'Your votes have been recorded');
-      } catch (error: any) {
-        const errorMessage = error.response?.data?.error || error.message || 'Failed to cast vote';
-        Alert.alert('Error', errorMessage);
-      }
-    } else {
-      if (!selectedOptionId) {
-        Alert.alert('Select Option', 'Please select an option first');
-        return;
-      }
-      if (hasVoted) {
-        Alert.alert('Already Voted', 'You already voted');
-        return;
-      }
-      try {
+      } else {
+        if (!selectedOptionId) {
+          Alert.alert('Select Option', 'Please select an option first');
+          return;
+        }
+        if (hasVoted) {
+          Alert.alert('Already Voted', 'You already voted');
+          return;
+        }
         await castVote(pollId, selectedOptionId);
         setHasVoted(true);
         setSelectedOptionId(null);
         Alert.alert('Vote Cast!', 'Your vote has been recorded');
-      } catch (error: any) {
-        const errorMessage = error.response?.data?.error || error.message || 'Failed to cast vote';
-        Alert.alert('Error', errorMessage);
       }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to cast vote';
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -242,8 +244,10 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
           {/* Vote submit button */}
           {canVote && (canSubmitSingle || canSubmitMulti) && (
             <Button
-              title="Cast Your Vote"
+              title={isSubmitting ? 'Submitting...' : 'Cast Your Vote'}
               onPress={handleSubmitVote}
+              disabled={isSubmitting}
+              loading={isSubmitting}
               size="lg"
             />
           )}

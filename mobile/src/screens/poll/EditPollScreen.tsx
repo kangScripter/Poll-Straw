@@ -43,7 +43,7 @@ export const EditPollScreen: React.FC<EditPollScreenProps> = ({ navigation, rout
       setDescription(currentPoll.description || '');
       setDeadline(
         currentPoll.deadline
-          ? new Date(currentPoll.deadline).toLocaleString('sv-SE', { hour12: false }).slice(0, 16).replace('T', ' ')
+          ? new Date(currentPoll.deadline).toISOString().slice(0, 16).replace('T', ' ')
           : ''
       );
       setRequireAuth(currentPoll.requireAuth);

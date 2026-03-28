@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Image } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import QRCodeSVG from 'react-native-qrcode-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/theme/colors';
 
@@ -11,14 +12,8 @@ interface QRCodeProps {
 }
 
 /**
- * QR Code Component
- * 
- * Uses an external QR code API to generate QR codes.
- * This avoids package conflicts and works immediately.
- * 
- * Alternative: To use a local library instead, install:
- * npm install react-native-qrcode-svg
- * (Note: May require fixing expo-font override conflicts)
+ * QR Code Component — generates QR codes locally using react-native-qrcode-svg.
+ * No external API calls; works offline and keeps poll URLs private.
  */
 export const QRCode: React.FC<QRCodeProps> = ({
   value,
@@ -26,57 +21,19 @@ export const QRCode: React.FC<QRCodeProps> = ({
   backgroundColor = colors.white,
   foregroundColor = colors.gray[900],
 }) => {
-  const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    generateQRCode();
-  }, [value, size, backgroundColor, foregroundColor]);
-
-  const generateQRCode = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Use QR Server API (free, no API key required)
-      // Alternative APIs: qrcode.tec-it.com, api.qrserver.com
-      // Convert hex colors to format without # for API
-      const bgColor = backgroundColor.replace('#', '');
-      const fgColor = foregroundColor.replace('#', '');
-      
-      const apiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(value)}&bgcolor=${bgColor}&color=${fgColor}&margin=1&ecc=M`;
-      
-      setQrImageUrl(apiUrl);
-      setLoading(false);
-    } catch (err: any) {
-      console.error('QR Code generation error:', err);
-      setError('Failed to generate QR code');
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
+  try {
     return (
       <View style={[styles.container, { width: size, height: size, backgroundColor }]}>
-        <ActivityIndicator size="large" color={foregroundColor} />
-        <Text style={[styles.loadingText, { color: foregroundColor }]}>
-          Generating QR Code...
-        </Text>
+        <QRCodeSVG
+          value={value}
+          size={size - 4}
+          backgroundColor={backgroundColor}
+          color={foregroundColor}
+          ecl="M"
+        />
       </View>
     );
-  }
-
-  if (error) {
-    return (
-      <View style={[styles.container, { width: size, height: size, backgroundColor }]}>
-        <Ionicons name="alert-circle-outline" size={size * 0.3} color={colors.error} />
-        <Text style={styles.errorText}>{error}</Text>
-      </View>
-    );
-  }
-
-  if (!qrImageUrl) {
+  } catch {
     return (
       <View style={[styles.container, { width: size, height: size, backgroundColor }]}>
         <Ionicons name="qr-code" size={size * 0.5} color={foregroundColor} />
@@ -86,19 +43,6 @@ export const QRCode: React.FC<QRCodeProps> = ({
       </View>
     );
   }
-
-  return (
-    <View style={[styles.container, { width: size, height: size, backgroundColor }]}>
-      <Image
-        source={{ uri: qrImageUrl }}
-        style={{ width: size, height: size }}
-        resizeMode="contain"
-        onError={() => {
-          setError('Failed to load QR code image');
-        }}
-      />
-    </View>
-  );
 };
 
 const styles = StyleSheet.create({
@@ -114,17 +58,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginTop: 8,
-  },
-  loadingText: {
-    fontSize: 12,
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  errorText: {
-    fontSize: 12,
-    color: colors.error,
-    marginTop: 8,
-    textAlign: 'center',
-    paddingHorizontal: 8,
   },
 });

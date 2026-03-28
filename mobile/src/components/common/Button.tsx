@@ -20,6 +20,7 @@ interface ButtonProps {
   style?: ViewStyle;
   textStyle?: TextStyle;
   icon?: React.ReactNode;
+  leftIcon?: React.ReactNode;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -33,6 +34,7 @@ export const Button: React.FC<ButtonProps> = ({
   style,
   textStyle,
   icon,
+  leftIcon,
 }) => {
   const isDisabled = disabled || loading;
 
@@ -67,7 +69,7 @@ export const Button: React.FC<ButtonProps> = ({
         />
       ) : (
         <>
-          {icon}
+          {leftIcon || icon}
           <Text style={textStyles}>{title}</Text>
         </>
       )}

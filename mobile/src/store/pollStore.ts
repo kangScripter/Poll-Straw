@@ -4,6 +4,7 @@ import { pollApi } from '@/services/api/pollApi';
 
 interface PollState {
   currentPoll: Poll | null;
+  recentPolls: Poll[];
   userPolls: Poll[];
   userPollsPagination: PaginatedResponse<Poll>['pagination'] | null;
   isLoading: boolean;
@@ -15,6 +16,7 @@ interface PollStore extends PollState {
   createPoll: (data: CreatePollInput) => Promise<Poll>;
   fetchPoll: (id: string) => Promise<void>;
   fetchPollByShareUrl: (shareUrl: string) => Promise<void>;
+  fetchRecentPolls: () => Promise<void>;
   fetchUserPolls: (page?: number) => Promise<void>;
   updatePoll: (id: string, data: Partial<CreatePollInput>) => Promise<void>;
   deletePoll: (id: string) => Promise<void>;
@@ -26,6 +28,7 @@ interface PollStore extends PollState {
 
 export const usePollStore = create<PollStore>((set, get) => ({
   currentPoll: null,
+  recentPolls: [],
   userPolls: [],
   userPollsPagination: null,
   isLoading: false,
@@ -75,6 +78,17 @@ export const usePollStore = create<PollStore>((set, get) => ({
     } catch (error: any) {
       const errorMsg = error.response?.data?.error || error.message || 'Poll not found';
       set({ error: errorMsg, isLoading: false });
+    }
+  },
+
+  fetchRecentPolls: async () => {
+    try {
+      const response = await pollApi.getRecent();
+      if (response.success && response.data) {
+        set({ recentPolls: response.data.polls });
+      }
+    } catch {
+      // Silently fail — recent polls are non-critical
     }
   },
 

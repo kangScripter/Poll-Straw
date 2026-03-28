@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { env, isDevelopment } from './env.js';
+import { env, isDevelopment, isTest } from './env.js';
 
 // Create Prisma client with logging in development
 export const prisma = new PrismaClient({
@@ -17,6 +17,9 @@ export async function connectDatabase(): Promise<void> {
     console.log('✅ Database connected successfully');
   } catch (error) {
     console.error('❌ Database connection failed:', error);
+    if (isTest) {
+      throw error;
+    }
     process.exit(1);
   }
 }

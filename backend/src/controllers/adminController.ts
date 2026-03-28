@@ -116,7 +116,7 @@ export const adminController = {
   async getReports(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const status = req.query.status as ReportStatus | undefined;
-      const page = parseInt(req.query.page as string) || 1;
+      const page = Math.max(1, Math.min(parseInt(req.query.page as string) || 1, 10000));
       const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
       const skip = (page - 1) * limit;
 
@@ -248,10 +248,11 @@ export const adminController = {
   // GET /api/admin/users
   async getUsers(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const page = parseInt(req.query.page as string) || 1;
+      const page = Math.max(1, Math.min(parseInt(req.query.page as string) || 1, 10000));
       const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
       const skip = (page - 1) * limit;
-      const search = req.query.search as string | undefined;
+      const searchSchema = z.string().max(100).trim().optional();
+      const search = searchSchema.parse(req.query.search);
 
       const where = search
         ? {

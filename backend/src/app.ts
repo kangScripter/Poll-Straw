@@ -13,9 +13,8 @@ import { apiLimiter } from './middleware/rateLimiter.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import routes from './routes/index.js';
 
-// ES module dirname equivalent
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Dirname for static files: use CJS __dirname when available (Jest), else cwd (ESM or fallback)
+const __dirnameApp = typeof __dirname !== 'undefined' ? __dirname : process.cwd();
 
 // Create Express app
 const app = express();
@@ -65,21 +64,21 @@ if (!isDevelopment) {
 app.set('trust proxy', 1);
 
 // Serve static files from public directory
-app.use('/static', express.static(path.join(__dirname, 'public')));
+app.use('/static', express.static(path.join(__dirnameApp, 'public')));
 
 // Deep link / Universal link redirect handler for polls
 // This serves the landing page that tries to open the app or shows install options
 app.get('/poll/:shareUrl', (req, res, next) => {
   try {
     const { shareUrl } = req.params;
-    const htmlPath = path.join(__dirname, 'public', 'poll-redirect.html');
+    const htmlPath = path.join(__dirnameApp, 'public', 'poll-redirect.html');
     
     // Log path for debugging
     if (isDevelopment) {
       console.log('Serving poll redirect page:', {
         shareUrl,
         htmlPath,
-        __dirname,
+        __dirnameApp,
         fileExists: existsSync(htmlPath),
       });
     }
@@ -149,7 +148,7 @@ app.get('/.well-known/apple-app-site-association', (req, res) => {
       apps: [],
       details: [
         {
-          appID: 'TEAMID.com.pollstraw.mobile', // Replace TEAMID with your Apple Developer Team ID
+          appID: `${process.env.APPLE_TEAM_ID || 'TEAMID'}.com.pollstraw.mobile`,
           paths: ['/poll/*', '/p/*'],
         },
       ],
@@ -167,8 +166,7 @@ app.get('/.well-known/assetlinks.json', (req, res) => {
         namespace: 'android_app',
         package_name: 'com.pollstraw.mobile',
         sha256_cert_fingerprints: [
-          // Replace with your app's SHA256 certificate fingerprint
-          'YOUR_SHA256_FINGERPRINT',
+          process.env.ANDROID_SHA256_FINGERPRINT || 'YOUR_SHA256_FINGERPRINT',
         ],
       },
     },
@@ -192,21 +190,13 @@ app.get('/', (req, res) => {
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-// Initialize server
-const startServer = async () => {
+// Initialize server (connects DB, Redis, Socket, then listens)
+const startServer = async (): Promise<void> => {
   try {
-    // Connect to database
     await connectDatabase();
-
-    // Connect to Redis
     await connectRedis();
-
-    // Initialize Socket.io
     initializeSocket(httpServer);
-
-    // Start server
     const PORT = parseInt(env.PORT, 10);
-    // Listen on all interfaces (0.0.0.0) to allow mobile device connections
     httpServer.listen(PORT, '0.0.0.0', () => {
       console.log(`
 ╔═══════════════════════════════════════════════════╗
@@ -220,32 +210,31 @@ const startServer = async () => {
 ╚═══════════════════════════════════════════════════╝
       `);
     });
-
-    // Graceful shutdown
     const shutdown = async (signal: string) => {
       console.log(`\n📴 ${signal} received. Shutting down gracefully...`);
-      
       httpServer.close(async () => {
         await disconnectDatabase();
         await disconnectRedis();
         console.log('✅ Server shut down complete');
         process.exit(0);
       });
-
-      // Force shutdown after 10 seconds
       setTimeout(() => {
         console.error('❌ Forced shutdown');
         process.exit(1);
       }, 10000);
     };
-
     process.on('SIGTERM', () => shutdown('SIGTERM'));
     process.on('SIGINT', () => shutdown('SIGINT'));
-
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);
   }
 };
 
-startServer();
+// Export for Supertest (tests call connectDatabase/connectRedis/initializeSocket in setup)
+export { app, httpServer, startServer };
+
+// Start server only when not in test (tests import app and mount with Supertest)
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
+}

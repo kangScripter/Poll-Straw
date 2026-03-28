@@ -54,6 +54,11 @@ export const redisHelpers = {
     await redis.setex(key, ttl, '1');
   },
 
+  async removeVoted(pollId: string, identifier: string, type: 'ip' | 'session' | 'device'): Promise<void> {
+    const key = `vote:${pollId}:${type}:${identifier}`;
+    await redis.del(key);
+  },
+
   // Poll results caching
   async getCachedResults(pollId: string): Promise<string | null> {
     return redis.get(`poll:${pollId}:results`);

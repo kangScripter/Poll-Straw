@@ -8,6 +8,7 @@ const router = Router();
 
 // Poll CRUD
 router.post('/', optionalAuth, pollCreationLimiter, pollController.create);
+router.get('/recent', pollController.getRecent);
 router.get('/:id', pollController.getById);
 router.get('/share/:shareUrl', pollController.getByShareUrl);
 router.get('/:id/results', pollController.getResults);
@@ -17,6 +18,9 @@ router.post('/:id/close', authenticate, pollController.close);
 
 // Voting
 router.post('/:id/vote', optionalAuth, voteLimiter, voteController.castVote);
+
+// Report a poll
+router.post('/:id/report', pollController.report);
 
 // Creator or admin - vote management
 router.get('/:id/votes', authenticate, creatorOrAdmin, voteController.getVotes);

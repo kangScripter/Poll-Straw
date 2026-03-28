@@ -69,7 +69,8 @@ export const getTokenExpiration = (token: string): number | null => {
 
 // Calculate refresh token expiry date
 export const getRefreshTokenExpiry = (): Date => {
-  const days = parseInt(env.JWT_REFRESH_EXPIRES_IN) || 7;
+  const match = env.JWT_REFRESH_EXPIRES_IN.match(/\d+/);
+  const days = parseInt(match?.[0] || '7') || 7;
   const expiry = new Date();
   expiry.setDate(expiry.getDate() + days);
   return expiry;

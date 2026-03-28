@@ -45,10 +45,19 @@ export const voteController = {
     try {
       const idOrShareUrl = req.params.id;
       const pollId = await pollService.resolveIdentifierToPollId(idOrShareUrl);
-      const page = parseInt(req.query.page as string) || 1;
+      const page = Math.max(1, Math.min(parseInt(req.query.page as string) || 1, 10000));
       const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
 
       const result = await voteService.getPollVotes(pollId, page, limit);
+
+      // Redact PII for non-admin users (B7 fix)
+      const isAdmin = req.user?.role === 'ADMIN';
+      if (!isAdmin) {
+        result.data = result.data.map((vote: any) => {
+          const { ipAddress, sessionId, deviceId, ...safe } = vote;
+          return safe;
+        });
+      }
 
       res.json({
         success: true,

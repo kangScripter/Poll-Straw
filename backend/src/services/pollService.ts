@@ -2,7 +2,9 @@ import { prisma } from '../config/database.js';
 import { redis, redisHelpers } from '../config/redis.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { generateShareUrl, calculatePercentage, isDeadlinePassed } from '../utils/helpers.js';
-import { ResultVisibility } from '@prisma/client';
+import { ResultVisibility, Poll, PollOption } from '@prisma/client';
+
+type PollWithOptions = Poll & { options: PollOption[] };
 
 export interface CreatePollInput {
   title: string;
@@ -297,7 +299,7 @@ export const pollService = {
     return this.formatPollWithResults(updated);
   },
 
-  // Get poll results (cached)
+  // Get poll results (cached with distributed lock to prevent thundering herd)
   async getResults(pollId: string): Promise<PollWithResults> {
     // Try cache first
     const cached = await redisHelpers.getCachedResults(pollId);
@@ -305,37 +307,53 @@ export const pollService = {
       return JSON.parse(cached);
     }
 
-    const poll = await prisma.poll.findUnique({
-      where: { id: pollId },
-      include: {
-        options: {
-          orderBy: { order: 'asc' },
-        },
-      },
-    });
+    // Acquire distributed lock to prevent multiple DB hits (B9 fix)
+    const lockKey = `lock:poll:${pollId}:results`;
+    const acquired = await redis.set(lockKey, '1', 'PX', 5000, 'NX');
 
-    if (!poll) {
-      throw new AppError('Poll not found', 404);
+    if (!acquired) {
+      // Another request is computing — wait briefly and retry cache
+      await new Promise((r) => setTimeout(r, 100));
+      const retryCache = await redisHelpers.getCachedResults(pollId);
+      if (retryCache) return JSON.parse(retryCache);
+      // Fall through to DB if cache still empty
     }
 
-    const results = this.formatPollWithResults(poll);
+    try {
+      const poll = await prisma.poll.findUnique({
+        where: { id: pollId },
+        include: {
+          options: {
+            orderBy: { order: 'asc' },
+          },
+        },
+      });
 
-    // Cache results for 5 seconds
-    await redisHelpers.cacheResults(pollId, results, 5);
+      if (!poll) {
+        throw new AppError('Poll not found', 404);
+      }
 
-    return results;
+      const results = this.formatPollWithResults(poll);
+
+      // Cache results for 5 seconds
+      await redisHelpers.cacheResults(pollId, results, 5);
+
+      return results;
+    } finally {
+      await redis.del(lockKey);
+    }
   },
 
   // Helper: Format poll with calculated results
-  formatPollWithResults(poll: any): PollWithResults {
-    const totalVotes = poll.totalVotes || poll.options.reduce((sum: number, opt: any) => sum + opt.voteCount, 0);
+  formatPollWithResults(poll: PollWithOptions): PollWithResults {
+    const totalVotes = poll.totalVotes || poll.options.reduce((sum: number, opt: PollOption) => sum + opt.voteCount, 0);
 
     return {
       id: poll.id,
       title: poll.title,
       description: poll.description,
       creatorId: poll.creatorId ?? null,
-      options: poll.options.map((opt: any) => ({
+      options: poll.options.map((opt: PollOption) => ({
         id: opt.id,
         text: opt.text,
         emoji: opt.emoji,

@@ -26,7 +26,7 @@ export const authLimiter = rateLimit({
   skipSuccessfulRequests: true,
 });
 
-// Vote limiter - stricter
+// Vote limiter - stricter, keyed by user/session/device/IP
 export const voteLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 30, // 30 votes per minute
@@ -36,6 +36,12 @@ export const voteLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req: Request) => {
+    const authUser = (req as any).user?.userId;
+    const sessionId = req.body?.sessionId;
+    const deviceId = req.body?.deviceId;
+    return authUser || sessionId || deviceId || getClientIp(req);
+  },
 });
 
 // Poll creation limiter

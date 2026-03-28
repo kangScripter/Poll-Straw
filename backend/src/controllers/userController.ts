@@ -117,15 +117,26 @@ export const userController = {
         return;
       }
 
-      // Soft delete - mark as inactive
-      await prisma.user.update({
-        where: { id: req.user.userId },
-        data: { isActive: false },
+      // Anonymize votes (GDPR: remove PII from vote records)
+      await prisma.vote.updateMany({
+        where: { userId: req.user.userId },
+        data: { userId: null, ipAddress: null, sessionId: null, deviceId: null },
+      });
+
+      // Delete password reset tokens
+      await prisma.passwordResetToken.deleteMany({
+        where: { userId: req.user.userId },
       });
 
       // Delete refresh tokens
       await prisma.refreshToken.deleteMany({
         where: { userId: req.user.userId },
+      });
+
+      // Soft delete - mark as inactive and clear personal data
+      await prisma.user.update({
+        where: { id: req.user.userId },
+        data: { isActive: false, name: null, email: `deleted_${req.user.userId}@removed.local` },
       });
 
       res.json({

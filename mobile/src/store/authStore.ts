@@ -23,49 +23,55 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   isLoading: true,
 
   login: async (data: LoginInput) => {
+    set({ isLoading: true });
     try {
       const response = await authApi.login(data);
-      
+
       if (response.success && response.data) {
         const { user, tokens } = response.data;
-        
+
         // Save to storage
         await AsyncStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, tokens.accessToken);
         await AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, tokens.refreshToken);
         await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
-        
+
         set({
           user,
           accessToken: tokens.accessToken,
           refreshToken: tokens.refreshToken,
           isAuthenticated: true,
+          isLoading: false,
         });
       }
     } catch (error) {
+      set({ isLoading: false });
       throw error;
     }
   },
 
   register: async (data: RegisterInput) => {
+    set({ isLoading: true });
     try {
       const response = await authApi.register(data);
-      
+
       if (response.success && response.data) {
         const { user, tokens } = response.data;
-        
+
         // Save to storage
         await AsyncStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, tokens.accessToken);
         await AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, tokens.refreshToken);
         await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
-        
+
         set({
           user,
           accessToken: tokens.accessToken,
           refreshToken: tokens.refreshToken,
           isAuthenticated: true,
+          isLoading: false,
         });
       }
     } catch (error) {
+      set({ isLoading: false });
       throw error;
     }
   },

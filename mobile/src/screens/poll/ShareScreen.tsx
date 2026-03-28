@@ -8,7 +8,6 @@ import {
   Alert,
   Share as RNShare,
   Dimensions,
-  Image,
   Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -21,7 +20,6 @@ import { usePollStore } from '@/store/pollStore';
 import { Button } from '@/components/common/Button';
 import { colors } from '@/theme/colors';
 import { RootStackParamList } from '@/types';
-import { API_URL } from '@/utils/constants';
 
 type ShareScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList>;
@@ -43,11 +41,8 @@ export const ShareScreen: React.FC<ShareScreenProps> = ({ navigation, route }) =
     }
   }, [pollId]);
 
-  // Use the API server URL for local development, or production URL for release
-  const baseUrl = __DEV__ 
-    ? API_URL.replace('/api', '') 
-    : 'https://api.pollstraw.com';
-  const fullUrl = `${baseUrl}/poll/${shareUrl}`;
+  // Always use canonical production URL for sharing
+  const fullUrl = `https://pollstraw.com/poll/${shareUrl}`;
   const poll = currentPoll;
 
   const handleCopyLink = async () => {
