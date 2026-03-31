@@ -8,7 +8,7 @@ import {
   TextInputProps,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -27,36 +27,40 @@ export const Input: React.FC<InputProps> = ({
   style,
   ...props
 }) => {
+  const { theme } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const borderColor = error
-    ? colors.error
+    ? theme.error
     : isFocused
-    ? colors.primary[500]
-    : colors.gray[300];
+    ? theme.inputFocusBorder
+    : theme.inputBorder;
 
   return (
     <View style={styles.container}>
-      {label && <Text style={styles.label}>{label}</Text>}
-      
-      <View style={[styles.inputContainer, { borderColor }]}>
+      {label && (
+        <Text style={[styles.label, { color: theme.textSecondary }]}>{label}</Text>
+      )}
+
+      <View style={[styles.inputContainer, { borderColor, backgroundColor: theme.inputBg }]}>
         {leftIcon && <View style={styles.iconLeft}>{leftIcon}</View>}
-        
+
         <TextInput
           style={[
             styles.input,
+            { color: theme.textPrimary },
             leftIcon && styles.inputWithLeftIcon,
             (rightIcon || isPassword) && styles.inputWithRightIcon,
             style,
           ]}
-          placeholderTextColor={colors.gray[400]}
+          placeholderTextColor={theme.textTertiary}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           secureTextEntry={isPassword && !showPassword}
           {...props}
         />
-        
+
         {isPassword && (
           <TouchableOpacity
             style={styles.iconRight}
@@ -65,17 +69,17 @@ export const Input: React.FC<InputProps> = ({
             <Ionicons
               name={showPassword ? 'eye-off-outline' : 'eye-outline'}
               size={20}
-              color={colors.gray[400]}
+              color={theme.textTertiary}
             />
           </TouchableOpacity>
         )}
-        
+
         {rightIcon && !isPassword && (
           <View style={styles.iconRight}>{rightIcon}</View>
         )}
       </View>
-      
-      {error && <Text style={styles.error}>{error}</Text>}
+
+      {error && <Text style={[styles.error, { color: theme.error }]}>{error}</Text>}
     </View>
   );
 };
@@ -85,24 +89,22 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
-    color: colors.gray[700],
     marginBottom: 6,
+    letterSpacing: 0.3,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1.5,
-    borderRadius: 12,
-    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderRadius: 8,
   },
   input: {
     flex: 1,
     paddingVertical: 12,
     paddingHorizontal: 16,
     fontSize: 16,
-    color: colors.gray[900],
   },
   inputWithLeftIcon: {
     paddingLeft: 8,
@@ -118,7 +120,6 @@ const styles = StyleSheet.create({
   },
   error: {
     fontSize: 12,
-    color: colors.error,
     marginTop: 4,
   },
 });

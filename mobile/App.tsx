@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuthStore } from './src/store/authStore';
 import { AppNavigator } from './src/navigation/AppNavigator';
-import { colors } from './src/theme/colors';
+import { ThemeProvider, useTheme } from './src/theme';
 
 // Error Boundary class component
 class ErrorBoundary extends React.Component<
@@ -23,24 +23,35 @@ class ErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <View style={styles.errorBoundary}>
-          <Text style={styles.errorTitle}>Something went wrong</Text>
-          <Text style={styles.errorMessage}>{this.state.error?.message}</Text>
-          <TouchableOpacity
-            style={styles.errorButton}
-            onPress={() => this.setState({ hasError: false, error: null })}
-          >
-            <Text style={styles.errorButtonText}>Try Again</Text>
-          </TouchableOpacity>
-        </View>
+        <ErrorBoundaryFallback
+          error={this.state.error}
+          onRetry={() => this.setState({ hasError: false, error: null })}
+        />
       );
     }
     return this.props.children;
   }
 }
 
-export default function App() {
+function ErrorBoundaryFallback({ error, onRetry }: { error: Error | null; onRetry: () => void }) {
+  const { theme } = useTheme();
+  return (
+    <View style={[styles.errorBoundary, { backgroundColor: theme.background }]}>
+      <Text style={[styles.errorTitle, { color: theme.textPrimary }]}>Something went wrong</Text>
+      <Text style={[styles.errorMessage, { color: theme.textSecondary }]}>{error?.message}</Text>
+      <TouchableOpacity
+        style={[styles.errorButton, { backgroundColor: theme.primary }]}
+        onPress={onRetry}
+      >
+        <Text style={[styles.errorButtonText, { color: theme.textOnPrimary }]}>Try Again</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function AppContent() {
   const { loadAuth, isLoading } = useAuthStore();
+  const { theme, isDark } = useTheme();
   const [hasInitialized, setHasInitialized] = useState(false);
 
   useEffect(() => {
@@ -55,21 +66,29 @@ export default function App() {
 
   if (!hasInitialized || isLoading) {
     return (
-      <SafeAreaProvider>
-        <View style={styles.loading}>
-          <ActivityIndicator size="large" color={colors.primary[500]} />
-        </View>
-      </SafeAreaProvider>
+      <View style={[styles.loading, { backgroundColor: theme.background }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
+      </View>
     );
   }
 
   return (
-    <SafeAreaProvider>
-      <ErrorBoundary>
-        <StatusBar style="dark" />
-        <AppNavigator />
-      </ErrorBoundary>
-    </SafeAreaProvider>
+    <>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <AppNavigator />
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <SafeAreaProvider>
+        <ErrorBoundary>
+          <AppContent />
+        </ErrorBoundary>
+      </SafeAreaProvider>
+    </ThemeProvider>
   );
 }
 
@@ -78,35 +97,29 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.gray[50],
   },
   errorBoundary: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 32,
-    backgroundColor: colors.gray[50],
   },
   errorTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: colors.gray[900],
     marginBottom: 12,
   },
   errorMessage: {
     fontSize: 14,
-    color: colors.gray[600],
     textAlign: 'center',
     marginBottom: 24,
   },
   errorButton: {
-    backgroundColor: colors.primary[500],
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 12,
   },
   errorButtonText: {
-    color: colors.white,
     fontWeight: '600',
     fontSize: 16,
   },

@@ -7,12 +7,12 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 
 interface ButtonProps {
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
   size?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
   loading?: boolean;
@@ -36,12 +36,33 @@ export const Button: React.FC<ButtonProps> = ({
   icon,
   leftIcon,
 }) => {
+  const { theme } = useTheme();
   const isDisabled = disabled || loading;
+
+  const variantStyles: Record<string, ViewStyle> = {
+    primary: { backgroundColor: theme.primary },
+    secondary: { backgroundColor: theme.success },
+    outline: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: theme.primary },
+    ghost: { backgroundColor: 'transparent' },
+    danger: { backgroundColor: theme.error },
+  };
+
+  const variantTextColors: Record<string, string> = {
+    primary: theme.textOnPrimary,
+    secondary: theme.textOnPrimary,
+    outline: theme.primary,
+    ghost: theme.primary,
+    danger: theme.textOnPrimary,
+  };
+
+  const spinnerColor = variant === 'outline' || variant === 'ghost'
+    ? theme.primary
+    : theme.textOnPrimary;
 
   const buttonStyles: ViewStyle[] = [
     styles.base,
-    styles[variant],
-    styles[`size_${size}`],
+    variantStyles[variant],
+    styles[`size_${size}` as keyof typeof styles] as ViewStyle,
     fullWidth && styles.fullWidth,
     isDisabled && styles.disabled,
     style as ViewStyle,
@@ -49,9 +70,8 @@ export const Button: React.FC<ButtonProps> = ({
 
   const textStyles: TextStyle[] = [
     styles.text,
-    styles[`text_${variant}`],
-    styles[`text_${size}`],
-    isDisabled && styles.textDisabled,
+    { color: variantTextColors[variant] },
+    styles[`text_${size}` as keyof typeof styles] as TextStyle,
     textStyle as TextStyle,
   ].filter(Boolean);
 
@@ -60,13 +80,10 @@ export const Button: React.FC<ButtonProps> = ({
       style={buttonStyles}
       onPress={onPress}
       disabled={isDisabled}
-      activeOpacity={0.7}
+      activeOpacity={0.85}
     >
       {loading ? (
-        <ActivityIndicator
-          color={variant === 'outline' || variant === 'ghost' ? colors.primary[500] : colors.white}
-          size="small"
-        />
+        <ActivityIndicator color={spinnerColor} size="small" />
       ) : (
         <>
           {leftIcon || icon}
@@ -84,20 +101,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 12,
     gap: 8,
-  },
-  primary: {
-    backgroundColor: colors.primary[500],
-  },
-  secondary: {
-    backgroundColor: colors.secondary[500],
-  },
-  outline: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: colors.primary[500],
-  },
-  ghost: {
-    backgroundColor: 'transparent',
   },
   size_sm: {
     paddingVertical: 8,
@@ -120,18 +123,6 @@ const styles = StyleSheet.create({
   text: {
     fontWeight: '600',
   },
-  text_primary: {
-    color: colors.white,
-  },
-  text_secondary: {
-    color: colors.white,
-  },
-  text_outline: {
-    color: colors.primary[500],
-  },
-  text_ghost: {
-    color: colors.primary[500],
-  },
   text_sm: {
     fontSize: 14,
   },
@@ -140,8 +131,5 @@ const styles = StyleSheet.create({
   },
   text_lg: {
     fontSize: 18,
-  },
-  textDisabled: {
-    opacity: 0.7,
   },
 });
