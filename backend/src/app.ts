@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { createServer } from 'http';
 import { existsSync } from 'fs';
 import { env, isDevelopment } from './config/env.js';
@@ -13,8 +12,22 @@ import { apiLimiter } from './middleware/rateLimiter.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import routes from './routes/index.js';
 
-// Dirname for static files: use CJS __dirname when available (Jest), else cwd (ESM or fallback)
-const __dirnameApp = typeof __dirname !== 'undefined' ? __dirname : process.cwd();
+// Static root: Jest/ts-jest (CJS) has __dirname → src/; Node ESM has no __dirname — resolve from argv (skip node_modules so tsx → project script, not the CLI)
+function getAppDir(): string {
+  if (typeof __dirname !== 'undefined') {
+    return __dirname;
+  }
+  const nm = `${path.sep}node_modules${path.sep}`;
+  const scriptArg = process.argv.slice(1).find((a) => {
+    if (a.startsWith('-') || !/\.(ts|tsx|js|mjs|cjs)$/i.test(a)) return false;
+    return !a.includes(nm);
+  });
+  if (scriptArg) {
+    return path.dirname(path.resolve(scriptArg));
+  }
+  return process.cwd();
+}
+const __dirnameApp = getAppDir();
 
 // Create Express app
 const app = express();

@@ -41,7 +41,7 @@
       background: white;
       border-radius: 24px;
       padding: 40px;
-      max-width: 400px;
+      max-width: 440px;
       width: 100%;
       text-align: center;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
@@ -72,10 +72,138 @@
     }
     
     .poll-title {
+      color: #1e293b;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      line-height: 1.45;
+    }
+
+    .poll-desc {
       color: #64748b;
-      font-size: 16px;
-      margin-bottom: 24px;
+      font-size: 14px;
+      margin-bottom: 20px;
       line-height: 1.5;
+      text-align: left;
+    }
+
+    .results-panel {
+      text-align: left;
+      margin-bottom: 20px;
+      padding: 16px;
+      background: #f8fafc;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .results-panel h2 {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #64748b;
+      margin-bottom: 12px;
+    }
+
+    .results-summary {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .results-stat {
+      flex: 1;
+      min-width: 88px;
+      padding: 10px 12px;
+      background: white;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      text-align: center;
+    }
+
+    .results-stat-value {
+      font-size: 22px;
+      font-weight: 700;
+      color: #0ea5e9;
+      line-height: 1.2;
+    }
+
+    .results-stat-label {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    .result-row {
+      margin-bottom: 14px;
+    }
+
+    .result-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .result-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      font-size: 14px;
+      color: #334155;
+      margin-bottom: 6px;
+    }
+
+    .result-label span:first-child {
+      flex: 1;
+      text-align: left;
+      word-break: break-word;
+    }
+
+    .result-meta {
+      font-size: 13px;
+      color: #64748b;
+      white-space: nowrap;
+    }
+
+    .result-bar-track {
+      height: 10px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .result-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #38bdf8 0%, #0ea5e9 100%);
+      min-width: 0;
+      transition: width 0.4s ease;
+    }
+
+    .results-hidden-msg {
+      font-size: 14px;
+      color: #64748b;
+      line-height: 1.5;
+      text-align: center;
+      padding: 8px 4px;
+    }
+
+    .options-preview {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .options-preview li {
+      padding: 8px 0;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 14px;
+      color: #475569;
+      text-align: left;
+    }
+
+    .options-preview li:last-child {
+      border-bottom: none;
     }
     
     .status {
@@ -224,6 +352,8 @@
     
     <h1>PollStraw</h1>
     <p class="poll-title" id="pollTitle">Loading poll...</p>
+    <p class="poll-desc hidden" id="pollDesc"></p>
+    <div id="resultsPanel" class="results-panel hidden" aria-live="polite"></div>
     
     <div class="status" id="status">
       <span class="loading"></span>
@@ -285,92 +415,162 @@
   </div>
 
   <script>
-    // Get poll ID from URL
+    // Share token from path /poll/:shareUrl (API accepts poll id or shareUrl)
     const pathParts = window.location.pathname.split('/');
     const pollIndex = pathParts.indexOf('poll');
-    const pollId = pollIndex !== -1 ? pathParts[pollIndex + 1] : null;
+    const shareToken = pollIndex !== -1 ? pathParts[pollIndex + 1] : null;
     
-    // Deep link URL schemes
     const appScheme = 'pollstraw://';
-    const universalLink = window.location.href;
-    const deepLinkUrl = pollId ? `${appScheme}poll/${pollId}` : appScheme;
+    const deepLinkUrl = shareToken ? `${appScheme}poll/${shareToken}` : appScheme;
     
-    // App store URLs (replace with your actual app store URLs)
     const appStoreUrl = 'https://apps.apple.com/app/pollstraw/id0000000000';
     const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.pollstraw.mobile';
     
-    // Set store button URLs
     document.getElementById('appStoreBtn').href = appStoreUrl;
     document.getElementById('playStoreBtn').href = playStoreUrl;
     
-    // Detect platform
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     const isAndroid = /Android/.test(navigator.userAgent);
     
-    // Try to open the app
     function openInApp() {
-      // Use the custom URL scheme
       window.location.href = deepLinkUrl;
     }
     
-    // Attempt to open app automatically
-    function attemptAppOpen() {
-      const statusEl = document.getElementById('status');
-      const appInstalledEl = document.getElementById('appInstalled');
-      const appNotInstalledEl = document.getElementById('appNotInstalled');
-      
-      // Set a timeout to show the install option
-      const timeout = setTimeout(() => {
-        // App didn't open, show install options
-        statusEl.classList.add('hidden');
-        appNotInstalledEl.classList.remove('hidden');
-      }, 2500);
-      
-      // Try to open the app
-      window.location.href = deepLinkUrl;
-      
-      // If the page visibility changes, the app opened
-      document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-          clearTimeout(timeout);
-        }
-      });
-      
-      // Also listen for blur event
-      window.addEventListener('blur', () => {
-        clearTimeout(timeout);
-      });
+    /** Same visibility rule as mobile PollDetailScreen */
+    function canShowResults(poll) {
+      return poll.hasVoted || !poll.isActive || poll.showResults === 'ALWAYS';
     }
     
-    // Fetch poll info for better UX
+    function resultsHiddenMessage(poll) {
+      if (poll.showResults === 'NEVER' && poll.isActive) {
+        return 'Live results are not published for this poll. Open the app for more.';
+      }
+      if (poll.showResults === 'AFTER_VOTE') {
+        return 'Vote in the PollStraw app to see results.';
+      }
+      if (poll.showResults === 'AFTER_DEADLINE') {
+        return 'Results will be available after this poll ends.';
+      }
+      return 'Open the app to see full results.';
+    }
+    
+    function escapeHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+    
+    function renderResults(poll) {
+      const panel = document.getElementById('resultsPanel');
+      if (!poll || !poll.options || !poll.options.length) {
+        panel.classList.add('hidden');
+        return;
+      }
+      panel.classList.remove('hidden');
+      
+      const show = canShowResults(poll);
+      
+      if (!show) {
+        const optionsList = poll.options.map(function (o) {
+          return '<li>' + escapeHtml(o.emoji ? o.emoji + ' ' : '') + escapeHtml(o.text) + '</li>';
+        }).join('');
+        panel.innerHTML =
+          '<h2>Options</h2>' +
+          '<ul class="options-preview">' + optionsList + '</ul>' +
+          '<p class="results-hidden-msg">' + escapeHtml(resultsHiddenMessage(poll)) + '</p>';
+        return;
+      }
+      
+      const rows = poll.options.map(function (o) {
+        var pct = typeof o.percentage === 'number' ? o.percentage : 0;
+        var vc = typeof o.voteCount === 'number' ? o.voteCount : 0;
+        var label = (o.emoji ? o.emoji + ' ' : '') + o.text;
+        return (
+          '<div class="result-row">' +
+          '<div class="result-label"><span>' + escapeHtml(label) + '</span>' +
+          '<span class="result-meta">' + vc + ' · ' + pct + '%</span></div>' +
+          '<div class="result-bar-track"><div class="result-bar-fill" style="width:' + pct + '%"></div></div>' +
+          '</div>'
+        );
+      }).join('');
+      
+      panel.innerHTML =
+        '<h2>Results</h2>' +
+        '<div class="results-summary">' +
+        '<div class="results-stat"><div class="results-stat-value">' + (poll.totalVotes ?? 0) + '</div>' +
+        '<div class="results-stat-label">Total votes</div></div>' +
+        '<div class="results-stat"><div class="results-stat-value">' + poll.options.length + '</div>' +
+        '<div class="results-stat-label">Options</div></div>' +
+        '</div>' + rows;
+    }
+    
     async function loadPollInfo() {
-      if (!pollId) {
-        document.getElementById('pollTitle').textContent = 'Open PollStraw to explore polls';
+      const titleEl = document.getElementById('pollTitle');
+      const descEl = document.getElementById('pollDesc');
+      
+      if (!shareToken) {
+        titleEl.textContent = 'Open PollStraw to explore polls';
         return;
       }
       
       try {
-        const response = await fetch(`/api/polls/${pollId}`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.data) {
-            document.getElementById('pollTitle').textContent = data.data.title;
-            document.title = `Vote: ${data.data.title} - PollStraw`;
-          }
+        const response = await fetch('/api/polls/' + encodeURIComponent(shareToken));
+        if (!response.ok) {
+          titleEl.textContent = 'Poll not found';
+          return;
         }
-      } catch (error) {
-        document.getElementById('pollTitle').textContent = 'Tap to vote on this poll';
+        const data = await response.json();
+        var poll = data.success && data.data && data.data.poll ? data.data.poll : null;
+        if (!poll) {
+          titleEl.textContent = 'Tap to vote on this poll';
+          return;
+        }
+        
+        titleEl.textContent = poll.title;
+        document.title = (poll.title ? poll.title + ' · PollStraw' : 'PollStraw');
+        
+        if (poll.description) {
+          descEl.textContent = poll.description;
+          descEl.classList.remove('hidden');
+        } else {
+          descEl.classList.add('hidden');
+        }
+        
+        renderResults(poll);
+        
+        var og = document.querySelector('meta[property="og:title"]');
+        if (og) og.setAttribute('content', poll.title + ' — PollStraw');
+        var ogd = document.querySelector('meta[property="og:description"]');
+        if (ogd) ogd.setAttribute('content', 'See results and vote on PollStraw');
+      } catch (e) {
+        titleEl.textContent = 'Tap to vote on this poll';
       }
     }
     
-    // Initialize
     loadPollInfo();
     
-    // On mobile, try to open the app automatically
+    function attemptAppOpen() {
+      const statusEl = document.getElementById('status');
+      const appNotInstalledEl = document.getElementById('appNotInstalled');
+      
+      const timeout = setTimeout(function () {
+        statusEl.classList.add('hidden');
+        appNotInstalledEl.classList.remove('hidden');
+      }, 2500);
+      
+      window.location.href = deepLinkUrl;
+      
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) clearTimeout(timeout);
+      });
+      window.addEventListener('blur', function () {
+        clearTimeout(timeout);
+      });
+    }
+    
     if (isIOS || isAndroid) {
       attemptAppOpen();
     } else {
-      // On desktop, show the options
       document.getElementById('status').classList.add('hidden');
       document.getElementById('appNotInstalled').classList.remove('hidden');
     }
