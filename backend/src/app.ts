@@ -39,10 +39,10 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'"], // Allow inline scripts for poll redirect page
-      styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'], // + Google Fonts stylesheet
       imgSrc: ["'self'", "data:", "https:"],
       connectSrc: ["'self'", "https://api.pollstraw.com"], // Allow API calls
-      fontSrc: ["'self'", "data:"],
+      fontSrc: ["'self'", 'data:', 'https://fonts.gstatic.com'],
     },
   },
 }));
