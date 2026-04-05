@@ -1,5 +1,6 @@
 import { prisma } from '../config/database.js';
 import { redis, redisHelpers } from '../config/redis.js';
+import { env } from '../config/env.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { generateShareUrl, calculatePercentage, isDeadlinePassed } from '../utils/helpers.js';
 import { ResultVisibility, Poll, PollOption } from '@prisma/client';
@@ -21,11 +22,26 @@ export interface CreatePollInput {
   creatorId?: string;
 }
 
+function publicShareLink(shareUrl: string): string {
+  const base = env.SHARE_POLL_BASE_URL.replace(/\/$/, '');
+  return `${base}/poll/${shareUrl}`;
+}
+
+function hydrateCachedResults(json: string): PollWithResults {
+  const r = JSON.parse(json) as PollWithResults;
+  if (r.shareUrl && !r.shareLink) {
+    r.shareLink = publicShareLink(r.shareUrl);
+  }
+  return r;
+}
+
 export interface PollWithResults {
   id: string;
   title: string;
   description: string | null;
   creatorId: string | null;
+  /** Full HTTPS URL for sharing this poll (uses SHARE_POLL_BASE_URL) */
+  shareLink: string;
   options: {
     id: string;
     text: string;
@@ -304,7 +320,7 @@ export const pollService = {
     // Try cache first
     const cached = await redisHelpers.getCachedResults(pollId);
     if (cached) {
-      return JSON.parse(cached);
+      return hydrateCachedResults(cached);
     }
 
     // Acquire distributed lock to prevent multiple DB hits (B9 fix)
@@ -315,7 +331,7 @@ export const pollService = {
       // Another request is computing — wait briefly and retry cache
       await new Promise((r) => setTimeout(r, 100));
       const retryCache = await redisHelpers.getCachedResults(pollId);
-      if (retryCache) return JSON.parse(retryCache);
+      if (retryCache) return hydrateCachedResults(retryCache);
       // Fall through to DB if cache still empty
     }
 
@@ -363,6 +379,7 @@ export const pollService = {
       totalVotes,
       viewCount: poll.viewCount,
       shareUrl: poll.shareUrl,
+      shareLink: publicShareLink(poll.shareUrl),
       deadline: poll.deadline,
       isActive: poll.isActive && !isDeadlinePassed(poll.deadline),
       showResults: poll.showResults,

@@ -1,14 +1,14 @@
 import { Server as HttpServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import { redis } from '../config/redis.js';
-import { env } from '../config/env.js';
+import { env, getProductionCorsOrigins, isDevelopment } from '../config/env.js';
 
 let io: Server;
 
 export const initializeSocket = (httpServer: HttpServer): Server => {
   io = new Server(httpServer, {
     cors: {
-      origin: env.FRONTEND_URL,
+      origin: isDevelopment ? env.FRONTEND_URL : getProductionCorsOrigins(),
       methods: ['GET', 'POST'],
       credentials: true,
     },

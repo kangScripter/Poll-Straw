@@ -13,6 +13,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useTheme } from '@/theme';
 import { CustomTabBar } from './CustomTabBar';
 import { RootStackParamList, MainTabParamList } from '@/types';
+import { buildSharePollUrl } from '@/utils/constants';
 
 // Auth Screens
 import { LoginScreen } from '@/screens/auth/LoginScreen';
@@ -68,6 +69,7 @@ const NavigationLoadingScreen: React.FC = () => {
 const linking: LinkingOptions<RootStackParamList> = {
   prefixes: [
     'pollstraw://',
+    'https://share.pollstraw.com',
     'https://pollstraw.com',
     'https://www.pollstraw.com',
   ],
@@ -325,9 +327,8 @@ export const AppNavigator: React.FC = () => {
 };
 
 // Export helper to generate shareable deep link URLs
-export const getShareableUrl = (pollId: string, shareUrl: string): string => {
-  // Use the web URL that will redirect to app or show install page
-  return `https://pollstraw.com/poll/${shareUrl}`;
+export const getShareableUrl = (_pollId: string, shareUrl: string): string => {
+  return buildSharePollUrl(shareUrl);
 };
 
 // Export helper to generate app deep link

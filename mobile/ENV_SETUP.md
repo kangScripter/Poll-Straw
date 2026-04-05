@@ -22,6 +22,7 @@ The `app.config.js` file reads from `.env` and exposes the variables via `expo-c
 ```env
 API_URL=http://api.pollstraw.com/api
 SOCKET_URL=http://api.pollstraw.com
+SHARE_POLL_BASE_URL=https://share.pollstraw.com
 ```
 
 ## Usage
@@ -51,7 +52,10 @@ Update `.env` for production:
 ```env
 API_URL=https://api.pollstraw.com/api
 SOCKET_URL=https://api.pollstraw.com
+SHARE_POLL_BASE_URL=https://share.pollstraw.com
 ```
+
+`SHARE_POLL_BASE_URL` is the domain users see in shared links (`https://share.pollstraw.com/poll/<token>`). It must match your DNS and Universal Links / App Links setup.
 
 ## Platform-Specific Fallbacks
 

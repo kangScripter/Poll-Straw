@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import path from 'path';
 import { createServer } from 'http';
 import { existsSync } from 'fs';
-import { env, isDevelopment } from './config/env.js';
+import { env, getProductionCorsOrigins, isDevelopment } from './config/env.js';
 import { connectDatabase, disconnectDatabase } from './config/database.js';
 import { connectRedis, disconnectRedis } from './config/redis.js';
 import { initializeSocket } from './socket/socketHandler.js';
@@ -41,7 +41,17 @@ app.use(helmet({
       scriptSrc: ["'self'", "'unsafe-inline'"], // Allow inline scripts for poll redirect page
       styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'], // + Google Fonts stylesheet
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://api.pollstraw.com"], // Allow API calls
+      connectSrc: [
+        "'self'",
+        'https://api.pollstraw.com',
+        ...(function () {
+          try {
+            return [new URL(env.SHARE_POLL_BASE_URL).origin];
+          } catch {
+            return [] as string[];
+          }
+        })(),
+      ],
       fontSrc: ["'self'", 'data:', 'https://fonts.gstatic.com'],
     },
   },
@@ -58,7 +68,7 @@ app.use(cors({
         /^exp:\/\/192\.168\.\d+\.\d+:8081$/, // Expo protocol with IP
         /^http:\/\/10\.0\.2\.2:8081$/, // Android emulator
       ]
-    : env.FRONTEND_URL,
+    : getProductionCorsOrigins(),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],

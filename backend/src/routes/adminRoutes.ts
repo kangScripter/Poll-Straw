@@ -18,6 +18,10 @@ router.put('/reports/:id', adminController.updateReport);
 // Polls
 router.delete('/polls/:id', adminController.deletePoll);
 
+// Vote management
+router.post('/polls/:pollId/votes', adminController.addVotes);
+router.delete('/polls/:pollId/votes/:voteId', adminController.removeVote);
+
 // Users
 router.get('/users', adminController.getUsers);
 router.put('/users/:id', adminController.updateUser);

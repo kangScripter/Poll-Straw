@@ -4,6 +4,10 @@ import { prisma } from '../config/database.js';
 import { AuthRequest } from '../middleware/auth.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { ReportStatus } from '@prisma/client';
+import { voteService } from '../services/voteService.js';
+import { pollService } from '../services/pollService.js';
+import { redisHelpers } from '../config/redis.js';
+import { broadcastVoteUpdate } from '../socket/socketHandler.js';
 
 export const adminController = {
   // GET /api/admin/analytics
@@ -300,6 +304,76 @@ export const adminController = {
             hasPrev: page > 1,
           },
         },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // POST /api/admin/polls/:pollId/votes — add synthetic votes to an option
+  async addVotes(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { pollId } = req.params;
+      const { optionId, count } = z.object({
+        optionId: z.string().min(1),
+        count: z.number().int().min(1).max(10000).default(1),
+      }).parse(req.body);
+
+      const poll = await prisma.poll.findUnique({
+        where: { id: pollId },
+        include: { options: true },
+      });
+
+      if (!poll) throw new AppError('Poll not found', 404);
+
+      const option = poll.options.find((o) => o.id === optionId);
+      if (!option) throw new AppError('Option not found on this poll', 404);
+
+      await prisma.$transaction(async (tx) => {
+        // Bulk-create synthetic vote records
+        await tx.vote.createMany({
+          data: Array.from({ length: count }, () => ({
+            pollId,
+            optionId,
+          })),
+        });
+
+        await tx.pollOption.update({
+          where: { id: optionId },
+          data: { voteCount: { increment: count } },
+        });
+
+        await tx.poll.update({
+          where: { id: pollId },
+          data: { totalVotes: { increment: count } },
+        });
+      });
+
+      await redisHelpers.invalidateResults(pollId);
+      const results = await pollService.getResults(pollId);
+      await redisHelpers.publishVoteUpdate(pollId, results);
+      broadcastVoteUpdate(pollId, results);
+
+      res.status(201).json({
+        success: true,
+        message: `Added ${count} vote(s) to option`,
+        data: { results },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // DELETE /api/admin/polls/:pollId/votes/:voteId — remove a specific vote
+  async removeVote(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { pollId, voteId } = req.params;
+
+      await voteService.deleteVote(voteId, pollId);
+
+      res.json({
+        success: true,
+        message: 'Vote removed successfully',
       });
     } catch (error) {
       next(error);

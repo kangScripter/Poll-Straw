@@ -74,6 +74,7 @@ Use a secure random string generator (minimum 32 characters)
 | `JWT_EXPIRES_IN` | No | `15m` | Access token expiration |
 | `JWT_REFRESH_EXPIRES_IN` | No | `7d` | Refresh token expiration |
 | `FRONTEND_URL` | No | `http://localhost:8081` | Frontend URL for CORS |
+| `SHARE_POLL_BASE_URL` | No | `https://share.pollstraw.com` | Public base URL for shared poll links (no trailing slash). Used in API `shareLink` and CORS for the share domain. |
 
 ## 🔒 Security Notes
 

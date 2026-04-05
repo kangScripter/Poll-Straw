@@ -3,6 +3,7 @@ import { redis, redisHelpers } from '../config/redis.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { isDeadlinePassed, calculatePercentage } from '../utils/helpers.js';
 import { pollService, PollWithResults } from './pollService.js';
+import { broadcastVoteUpdate } from '../socket/socketHandler.js';
 
 export interface CastVoteInput {
   pollId: string;
@@ -280,6 +281,11 @@ export const voteService = {
 
     // Invalidate cache
     await redisHelpers.invalidateResults(pollId);
+
+    // Broadcast real-time update
+    const updatedResults = await pollService.getResults(pollId);
+    await redisHelpers.publishVoteUpdate(pollId, updatedResults);
+    broadcastVoteUpdate(pollId, updatedResults);
 
     // Clear duplicate-check Redis keys so the voter can vote again
     const redisCacheKey = `${pollId}:${vote.optionId}`;

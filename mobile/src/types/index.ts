@@ -36,6 +36,8 @@ export interface Poll {
   totalVotes: number;
   viewCount: number;
   shareUrl: string;
+  /** Full share URL from API (uses server SHARE_POLL_BASE_URL) */
+  shareLink?: string;
   deadline: string | null;
   isActive: boolean;
   showResults: 'ALWAYS' | 'AFTER_VOTE' | 'AFTER_DEADLINE' | 'NEVER';

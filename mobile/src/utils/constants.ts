@@ -60,6 +60,24 @@ const getSocketUrl = (): string => {
   return 'https://api.pollstraw.com';
 };
 
+/** Base URL for shared poll links (no trailing slash). Set SHARE_POLL_BASE_URL in .env / app.config extra. */
+const getSharePollBaseUrl = (): string => {
+  const fromExtra = Constants.expoConfig?.extra?.sharePollBaseUrl as string | undefined;
+  if (fromExtra?.trim()) {
+    return fromExtra.replace(/\/$/, '');
+  }
+  if (__DEV__) {
+    return 'http://localhost:3000';
+  }
+  return 'https://share.pollstraw.com';
+};
+
+export const SHARE_POLL_BASE_URL = getSharePollBaseUrl();
+
+export function buildSharePollUrl(shareSlug: string): string {
+  return `${SHARE_POLL_BASE_URL}/poll/${shareSlug}`;
+}
+
 // API Configuration
 export const API_URL = getApiUrl();
 export const SOCKET_URL = getSocketUrl();
@@ -69,6 +87,7 @@ if (__DEV__) {
   console.log('🔌 API Configuration:');
   console.log('  API_URL:', API_URL);
   console.log('  SOCKET_URL:', SOCKET_URL);
+  console.log('  SHARE_POLL_BASE_URL:', SHARE_POLL_BASE_URL);
   console.log('  Platform:', Platform.OS);
   console.log('  __DEV__:', __DEV__);
 }

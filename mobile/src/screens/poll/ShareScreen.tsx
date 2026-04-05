@@ -20,6 +20,7 @@ import { usePollStore } from '@/store/pollStore';
 import { Button } from '@/components/common/Button';
 import { useTheme } from '@/theme';
 import { RootStackParamList } from '@/types';
+import { buildSharePollUrl } from '@/utils/constants';
 
 type ShareScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList>;
@@ -42,9 +43,9 @@ export const ShareScreen: React.FC<ShareScreenProps> = ({ navigation, route }) =
     }
   }, [pollId]);
 
-  // Always use canonical production URL for sharing
-  const fullUrl = `https://pollstraw.com/poll/${shareUrl}`;
   const poll = currentPoll;
+  const fullUrl =
+    poll?.shareLink?.trim() || buildSharePollUrl(shareUrl);
 
   const handleCopyLink = async () => {
     try {

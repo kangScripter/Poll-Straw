@@ -31,6 +31,7 @@ module.exports = {
       supportsTablet: true,
       bundleIdentifier: 'com.pollstraw.mobile',
       associatedDomains: [
+        'applinks:share.pollstraw.com',
         'applinks:pollstraw.com',
         'applinks:www.pollstraw.com',
       ],
@@ -47,6 +48,11 @@ module.exports = {
           action: 'VIEW',
           autoVerify: true,
           data: [
+            {
+              scheme: 'https',
+              host: 'share.pollstraw.com',
+              pathPrefix: '/poll',
+            },
             {
               scheme: 'https',
               host: 'pollstraw.com',
@@ -68,6 +74,7 @@ module.exports = {
     extra: {
       apiUrl: process.env.API_URL || 'http://pollstraw.com/api',
       socketUrl: process.env.SOCKET_URL || 'http://pollstraw.com',
+      sharePollBaseUrl: process.env.SHARE_POLL_BASE_URL || 'https://share.pollstraw.com',
       eas: {
         projectId: '1675c5e3-2b73-461f-908c-eb2a16d62e60',
       },
