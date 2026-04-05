@@ -4,8 +4,8 @@
  */
 import request from 'supertest';
 import { io as ioClient } from 'socket.io-client';
-import { app, httpServer } from '../../app';
-import { globalSetup, globalTeardown } from '../globalSetup';
+import { app, httpServer } from '../../app.js';
+import { globalSetup, globalTeardown } from '../globalSetup.js';
 
 beforeAll(async () => {
   await globalSetup();

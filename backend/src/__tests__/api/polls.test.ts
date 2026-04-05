@@ -2,8 +2,8 @@
  * API tests: Polls CRUD, get by id/shareUrl, results, update, delete, close.
  */
 import request from 'supertest';
-import { app } from '../../app';
-import { globalSetup, globalTeardown } from '../globalSetup';
+import { app } from '../../app.js';
+import { globalSetup, globalTeardown } from '../globalSetup.js';
 
 const BASE = '/api/polls';
 

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Poll, CreatePollInput, PaginatedResponse } from '@/types';
 import { pollApi } from '@/services/api/pollApi';
+import { userApi } from '@/services/api/userApi';
 
 interface PollState {
   currentPoll: Poll | null;
@@ -95,7 +96,6 @@ export const usePollStore = create<PollStore>((set, get) => ({
   fetchUserPolls: async (page: number = 1) => {
     set({ isLoading: true, error: null });
     try {
-      const { userApi } = await import('@/services/api/userApi');
       const response = await userApi.getPolls(page);
       if (response.success && response.data) {
         const { data, pagination } = response.data;

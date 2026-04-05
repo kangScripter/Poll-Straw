@@ -3,8 +3,8 @@
  * Uses Supertest against the app exported from app.ts (no listen).
  */
 import request from 'supertest';
-import { app } from '../../app';
-import { globalSetup, globalTeardown } from '../globalSetup';
+import { app } from '../../app.js';
+import { globalSetup, globalTeardown } from '../globalSetup.js';
 
 const BASE = '/api/auth';
 

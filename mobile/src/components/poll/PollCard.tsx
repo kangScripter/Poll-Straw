@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Poll } from '@/types';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 import { PollOption } from './PollOption';
 
 interface PollCardProps {
@@ -24,43 +24,65 @@ export const PollCard: React.FC<PollCardProps> = ({
   selectedOptionIds,
   realTimeResults,
 }) => {
+  const { theme, isDark } = useTheme();
   const displayPoll = realTimeResults || poll;
   const isActive = displayPoll.isActive;
   const hasDeadline = displayPoll.deadline;
-  
+
   const formatDeadline = (deadline: string) => {
     const date = new Date(deadline);
     const now = new Date();
     const diff = date.getTime() - now.getTime();
-    
+
     if (diff < 0) return 'Ended';
-    
+
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    
+
     if (days > 0) return `${days}d ${hours}h left`;
     if (hours > 0) return `${hours}h left`;
-    
+
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
     return `${minutes}m left`;
   };
 
-  const CardWrapper = onPress ? TouchableOpacity : View;
+  const cardStyle = [
+    styles.container,
+    {
+      backgroundColor: theme.surface,
+      borderColor: theme.border,
+      borderLeftColor: isActive ? theme.primary : theme.border,
+    },
+    !isDark
+      ? {
+          shadowColor: theme.cardShadow,
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 1,
+          shadowRadius: 2,
+          elevation: 1,
+        }
+      : {},
+  ];
 
-  return (
-    <CardWrapper
-      style={styles.container}
-      onPress={onPress}
-      activeOpacity={0.9}
-    >
+  const body = (
+    <>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title} numberOfLines={2}>
+        <Text style={[styles.title, { color: theme.textPrimary }]} numberOfLines={2}>
           {displayPoll.title}
         </Text>
-        <View style={[styles.statusBadge, !isActive && styles.statusInactive]}>
-          <View style={[styles.statusDot, !isActive && styles.statusDotInactive]} />
-          <Text style={[styles.statusText, !isActive && styles.statusTextInactive]}>
+        <View style={[
+          styles.statusBadge,
+          { backgroundColor: isActive ? theme.successSubtle : theme.surfaceSubtle },
+        ]}>
+          <View style={[
+            styles.statusDot,
+            { backgroundColor: isActive ? theme.success : theme.textTertiary },
+          ]} />
+          <Text style={[
+            styles.statusText,
+            { color: isActive ? theme.success : theme.textTertiary },
+          ]}>
             {isActive ? 'Active' : 'Closed'}
           </Text>
         </View>
@@ -68,7 +90,7 @@ export const PollCard: React.FC<PollCardProps> = ({
 
       {/* Description */}
       {displayPoll.description && (
-        <Text style={styles.description} numberOfLines={2}>
+        <Text style={[styles.description, { color: theme.textSecondary }]} numberOfLines={2}>
           {displayPoll.description}
         </Text>
       )}
@@ -93,43 +115,51 @@ export const PollCard: React.FC<PollCardProps> = ({
       </View>
 
       {/* Footer */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { borderTopColor: theme.divider }]}>
         <View style={styles.footerItem}>
-          <Ionicons name="checkmark-circle-outline" size={16} color={colors.gray[500]} />
-          <Text style={styles.footerText}>
+          <Ionicons name="checkmark-circle-outline" size={16} color={theme.textTertiary} />
+          <Text style={[styles.footerText, { color: theme.textTertiary }]}>
             {displayPoll.totalVotes} {displayPoll.totalVotes === 1 ? 'vote' : 'votes'}
           </Text>
         </View>
 
         {hasDeadline && (
           <View style={styles.footerItem}>
-            <Ionicons name="time-outline" size={16} color={colors.gray[500]} />
-            <Text style={styles.footerText}>
+            <Ionicons name="time-outline" size={16} color={theme.textTertiary} />
+            <Text style={[styles.footerText, { color: theme.textTertiary }]}>
               {formatDeadline(displayPoll.deadline!)}
             </Text>
           </View>
         )}
 
         <View style={styles.footerItem}>
-          <Ionicons name="eye-outline" size={16} color={colors.gray[500]} />
-          <Text style={styles.footerText}>{displayPoll.viewCount}</Text>
+          <Ionicons name="eye-outline" size={16} color={theme.textTertiary} />
+          <Text style={[styles.footerText, { color: theme.textTertiary }]}>
+            {displayPoll.viewCount}
+          </Text>
         </View>
       </View>
-    </CardWrapper>
+    </>
   );
+
+  if (onPress) {
+    return (
+      <TouchableOpacity style={cardStyle} onPress={onPress} activeOpacity={0.9}>
+        {body}
+      </TouchableOpacity>
+    );
+  }
+
+  return <View style={cardStyle}>{body}</View>;
 };
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderLeftWidth: 3,
     padding: 16,
-    marginBottom: 16,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    marginBottom: 12,
   },
   header: {
     flexDirection: 'row',
@@ -139,53 +169,38 @@ const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.gray[900],
+    fontSize: 16,
+    fontWeight: '600',
     marginRight: 12,
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.success + '15',
-    paddingVertical: 4,
+    paddingVertical: 3,
     paddingHorizontal: 8,
-    borderRadius: 12,
-  },
-  statusInactive: {
-    backgroundColor: colors.gray[200],
+    borderRadius: 999,
   },
   statusDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: colors.success,
     marginRight: 6,
   },
-  statusDotInactive: {
-    backgroundColor: colors.gray[400],
-  },
   statusText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
-    color: colors.success,
-  },
-  statusTextInactive: {
-    color: colors.gray[500],
   },
   description: {
     fontSize: 14,
-    color: colors.gray[600],
-    marginBottom: 16,
+    marginBottom: 12,
     lineHeight: 20,
   },
   options: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   footer: {
     flexDirection: 'row',
     borderTopWidth: 1,
-    borderTopColor: colors.gray[100],
     paddingTop: 12,
     gap: 16,
   },
@@ -195,7 +210,6 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   footerText: {
-    fontSize: 13,
-    color: colors.gray[500],
+    fontSize: 12,
   },
 });

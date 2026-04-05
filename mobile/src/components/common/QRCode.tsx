@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import QRCodeSVG from 'react-native-qrcode-svg';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 
 interface QRCodeProps {
   value: string;
@@ -11,35 +11,34 @@ interface QRCodeProps {
   foregroundColor?: string;
 }
 
-/**
- * QR Code Component — generates QR codes locally using react-native-qrcode-svg.
- * No external API calls; works offline and keeps poll URLs private.
- */
 export const QRCode: React.FC<QRCodeProps> = ({
   value,
   size = 200,
-  backgroundColor = colors.white,
-  foregroundColor = colors.gray[900],
+  backgroundColor,
+  foregroundColor,
 }) => {
+  const { theme, isDark } = useTheme();
+
+  const bg = backgroundColor ?? (isDark ? theme.surface : '#FFFFFF');
+  const fg = foregroundColor ?? (isDark ? '#FFFFFF' : theme.textPrimary);
+
   try {
     return (
-      <View style={[styles.container, { width: size, height: size, backgroundColor }]}>
+      <View style={[styles.container, { width: size, height: size, backgroundColor: bg }]}>
         <QRCodeSVG
           value={value}
           size={size - 4}
-          backgroundColor={backgroundColor}
-          color={foregroundColor}
+          backgroundColor={bg}
+          color={fg}
           ecl="M"
         />
       </View>
     );
   } catch {
     return (
-      <View style={[styles.container, { width: size, height: size, backgroundColor }]}>
-        <Ionicons name="qr-code" size={size * 0.5} color={foregroundColor} />
-        <Text style={[styles.placeholderText, { color: foregroundColor }]}>
-          QR Code
-        </Text>
+      <View style={[styles.container, { width: size, height: size, backgroundColor: bg }]}>
+        <Ionicons name="qr-code" size={size * 0.5} color={fg} />
+        <Text style={[styles.placeholderText, { color: fg }]}>QR Code</Text>
       </View>
     );
   }
@@ -50,8 +49,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: colors.gray[200],
     overflow: 'hidden',
   },
   placeholderText: {

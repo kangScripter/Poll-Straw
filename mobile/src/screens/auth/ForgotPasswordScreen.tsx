@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -15,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { authApi } from '@/services/api/authApi';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 import { RootStackParamList } from '@/types';
 
 type ForgotPasswordScreenProps = {
@@ -23,6 +22,7 @@ type ForgotPasswordScreenProps = {
 };
 
 export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navigation }) => {
+  const { theme } = useTheme();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -40,7 +40,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navi
     try {
       setIsLoading(true);
       const response = await authApi.forgotPassword(email.trim());
-      
+
       if (response.success) {
         Alert.alert(
           'Check Your Email',
@@ -61,31 +61,41 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navi
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+        style={{ flex: 1 }}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={{ flexGrow: 1, padding: 20 }}
           showsVerticalScrollIndicator={false}
         >
           {/* Header */}
-          <View style={styles.header}>
+          <View style={{ marginTop: 20, marginBottom: 32 }}>
             <TouchableOpacity
-              style={styles.backButton}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: theme.surfaceSubtle,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 24,
+              }}
               onPress={() => navigation.goBack()}
             >
-              <Ionicons name="arrow-back" size={24} color={colors.gray[900]} />
+              <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
             </TouchableOpacity>
-            <Text style={styles.title}>Forgot Password</Text>
-            <Text style={styles.subtitle}>
+            <Text style={{ fontSize: 28, fontWeight: '700', color: theme.textPrimary, marginBottom: 8 }}>
+              Forgot Password
+            </Text>
+            <Text style={{ fontSize: 16, color: theme.textSecondary, lineHeight: 22 }}>
               Enter your email address and we'll send you a link to reset your password
             </Text>
           </View>
 
           {/* Form */}
-          <View style={styles.form}>
+          <View style={{ gap: 20 }}>
             <Input
               label="Email Address"
               placeholder="Enter your email"
@@ -94,7 +104,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navi
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
-              leftIcon={<Ionicons name="mail-outline" size={20} color={colors.gray[400]} />}
+              leftIcon={<Ionicons name="mail-outline" size={20} color={theme.textTertiary} />}
             />
 
             <Button
@@ -104,10 +114,10 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navi
               size="lg"
             />
 
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>Remember your password?</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 8 }}>
+              <Text style={{ fontSize: 14, color: theme.textSecondary }}>Remember your password?</Text>
               <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                <Text style={styles.footerLink}>Back to Login</Text>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: theme.primary }}>Back to Login</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -116,60 +126,3 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navi
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.white,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    padding: 20,
-  },
-  header: {
-    marginTop: 20,
-    marginBottom: 32,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.gray[100],
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.gray[900],
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.gray[600],
-    lineHeight: 22,
-  },
-  form: {
-    gap: 20,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 8,
-  },
-  footerText: {
-    fontSize: 14,
-    color: colors.gray[600],
-  },
-  footerLink: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary[500],
-  },
-});

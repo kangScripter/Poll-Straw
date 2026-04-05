@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -15,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/store/authStore';
 import { Input } from '@/components/common/Input';
 import { Button } from '@/components/common/Button';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 import { RootStackParamList } from '@/types';
 import { handleApiError } from '@/services/api/client';
 import { APP_CONFIG } from '@/utils/constants';
@@ -37,6 +36,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
   }>({});
   const [isLoading, setIsLoading] = useState(false);
 
+  const { theme } = useTheme();
   const register = useAuthStore((state) => state.register);
 
   const validate = (): boolean => {
@@ -84,30 +84,49 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+        style={{ flex: 1 }}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={{ flexGrow: 1, padding: 24 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
           {/* Header */}
-          <View style={styles.header}>
+          <View style={{ marginBottom: 32 }}>
             <TouchableOpacity
-              style={styles.backButton}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                backgroundColor: theme.surfaceSubtle,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 24,
+              }}
               onPress={() => navigation.goBack()}
             >
-              <Ionicons name="arrow-back" size={24} color={colors.gray[700]} />
+              <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
             </TouchableOpacity>
-            <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>Sign up to get started</Text>
+            <Text
+              style={{
+                fontSize: 28,
+                fontWeight: '700',
+                color: theme.textPrimary,
+                marginBottom: 8,
+              }}
+            >
+              Create Account
+            </Text>
+            <Text style={{ fontSize: 16, color: theme.textSecondary }}>
+              Sign up to get started
+            </Text>
           </View>
 
           {/* Form */}
-          <View style={styles.form}>
+          <View style={{ marginBottom: 24 }}>
             <Input
               label="Name (Optional)"
               placeholder="Enter your name"
@@ -116,7 +135,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
               autoCapitalize="words"
               error={errors.name}
               leftIcon={
-                <Ionicons name="person-outline" size={20} color={colors.gray[400]} />
+                <Ionicons name="person-outline" size={20} color={theme.textTertiary} />
               }
             />
 
@@ -130,7 +149,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
               autoComplete="email"
               error={errors.email}
               leftIcon={
-                <Ionicons name="mail-outline" size={20} color={colors.gray[400]} />
+                <Ionicons name="mail-outline" size={20} color={theme.textTertiary} />
               }
             />
 
@@ -142,7 +161,11 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
               isPassword
               error={errors.password}
               leftIcon={
-                <Ionicons name="lock-closed-outline" size={20} color={colors.gray[400]} />
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color={theme.textTertiary}
+                />
               }
             />
 
@@ -154,7 +177,11 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
               isPassword
               error={errors.confirmPassword}
               leftIcon={
-                <Ionicons name="lock-closed-outline" size={20} color={colors.gray[400]} />
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color={theme.textTertiary}
+                />
               }
             />
 
@@ -168,10 +195,27 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
           </View>
 
           {/* Footer */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Already have an account?</Text>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            <Text style={{ fontSize: 14, color: theme.textSecondary }}>
+              Already have an account?
+            </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <Text style={styles.footerLink}>Sign In</Text>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: theme.primary,
+                  fontWeight: '600',
+                }}
+              >
+                Sign In
+              </Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -179,57 +223,3 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.white,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    padding: 24,
-  },
-  header: {
-    marginBottom: 32,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: colors.gray[100],
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.gray[900],
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.gray[500],
-  },
-  form: {
-    marginBottom: 24,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 4,
-  },
-  footerText: {
-    fontSize: 14,
-    color: colors.gray[500],
-  },
-  footerLink: {
-    fontSize: 14,
-    color: colors.primary[500],
-    fontWeight: '600',
-  },
-});

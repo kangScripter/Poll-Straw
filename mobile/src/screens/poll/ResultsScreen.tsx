@@ -15,7 +15,10 @@ import { VictoryBar, VictoryChart, VictoryPie, VictoryTheme, VictoryAxis, Victor
 import { usePollStore } from '@/store/pollStore';
 import { useRealTimeVotes } from '@/hooks/useRealTimeVotes';
 import { Button } from '@/components/common/Button';
-import { colors } from '@/theme/colors';
+import { AnimatedNumber } from '@/components/common/AnimatedNumber';
+import { ResultsChartSkeleton } from '@/components/common/SkeletonLoader';
+import { useTheme } from '@/theme';
+import { hapticSelection } from '@/utils/haptics';
 import { RootStackParamList, Poll } from '@/types';
 
 type ResultsScreenProps = {
@@ -28,8 +31,9 @@ const CHART_WIDTH = SCREEN_WIDTH - 80;
 const CHART_HEIGHT = 300;
 
 export const ResultsScreen: React.FC<ResultsScreenProps> = ({ navigation, route }) => {
+  const { theme } = useTheme();
   const { pollId } = route.params;
-  const { currentPoll, fetchPoll } = usePollStore();
+  const { currentPoll, fetchPoll, isLoading } = usePollStore();
   const { results: realTimeResults, isConnected } = useRealTimeVotes(pollId);
   const [chartType, setChartType] = useState<'bar' | 'pie'>('bar');
 
@@ -38,6 +42,19 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ navigation, route 
   }, [pollId]);
 
   const displayPoll = realTimeResults || currentPoll;
+
+  if (!displayPoll && isLoading) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={['top']}>
+        <ScrollView
+          contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <ResultsChartSkeleton />
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   if (!displayPoll) {
     return null;
@@ -55,6 +72,8 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ navigation, route 
     y: option.voteCount,
     option: option,
   }));
+
+  const styles = getStyles(theme);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -82,17 +101,17 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ navigation, route 
         {/* Stats Summary */}
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
-            <Ionicons name="checkmark-circle" size={24} color={colors.primary[500]} />
-            <Text style={styles.statValue}>{displayPoll.totalVotes}</Text>
+            <Ionicons name="checkmark-circle" size={24} color={theme.primary} />
+            <AnimatedNumber style={styles.statValue} value={displayPoll.totalVotes} />
             <Text style={styles.statLabel}>Total Votes</Text>
           </View>
           <View style={styles.statCard}>
-            <Ionicons name="options" size={24} color={colors.secondary[500]} />
+            <Ionicons name="options" size={24} color={theme.accent} />
             <Text style={styles.statValue}>{displayPoll.options.length}</Text>
             <Text style={styles.statLabel}>Options</Text>
           </View>
           <View style={styles.statCard}>
-            <Ionicons name="eye" size={24} color={colors.success} />
+            <Ionicons name="eye" size={24} color={theme.success} />
             <Text style={styles.statValue}>{displayPoll.viewCount}</Text>
             <Text style={styles.statLabel}>Views</Text>
           </View>
@@ -102,12 +121,15 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ navigation, route 
         <View style={styles.chartToggle}>
           <TouchableOpacity
             style={[styles.toggleButton, chartType === 'bar' && styles.toggleButtonActive]}
-            onPress={() => setChartType('bar')}
+            onPress={() => {
+              hapticSelection();
+              setChartType('bar');
+            }}
           >
             <Ionicons
               name="bar-chart"
               size={20}
-              color={chartType === 'bar' ? colors.white : colors.gray[600]}
+              color={chartType === 'bar' ? theme.textOnPrimary : theme.textSecondary}
             />
             <Text
               style={[
@@ -120,12 +142,15 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ navigation, route 
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.toggleButton, chartType === 'pie' && styles.toggleButtonActive]}
-            onPress={() => setChartType('pie')}
+            onPress={() => {
+              hapticSelection();
+              setChartType('pie');
+            }}
           >
             <Ionicons
               name="pie-chart"
               size={20}
-              color={chartType === 'pie' ? colors.white : colors.gray[600]}
+              color={chartType === 'pie' ? theme.textOnPrimary : theme.textSecondary}
             />
             <Text
               style={[
@@ -149,15 +174,15 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ navigation, route 
             >
               <VictoryAxis
                 style={{
-                  axis: { stroke: colors.gray[300] },
-                  tickLabels: { fill: colors.gray[600], fontSize: 10 },
+                  axis: { stroke: theme.border },
+                  tickLabels: { fill: theme.textSecondary, fontSize: 10 },
                 }}
               />
               <VictoryAxis
                 dependentAxis
                 style={{
-                  axis: { stroke: colors.gray[300] },
-                  tickLabels: { fill: colors.gray[600], fontSize: 10 },
+                  axis: { stroke: theme.border },
+                  tickLabels: { fill: theme.textSecondary, fontSize: 10 },
                 }}
               />
               <VictoryBar
@@ -166,12 +191,12 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ navigation, route 
                 y="y"
                 style={{
                   data: {
-                    fill: colors.primary[500],
+                    fill: theme.primary,
                     width: 30,
                   },
                 }}
                 labels={({ datum }) => `${datum.y}`}
-                labelComponent={<VictoryLabel dy={-10} style={{ fill: colors.gray[700], fontSize: 12 }} />}
+                labelComponent={<VictoryLabel dy={-10} style={{ fill: theme.textPrimary, fontSize: 12 }} />}
               />
             </VictoryChart>
           ) : (
@@ -181,19 +206,21 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ navigation, route 
                 width={CHART_WIDTH}
                 height={CHART_HEIGHT}
                 colorScale={[
-                  colors.primary[500],
-                  colors.secondary[500],
-                  colors.success,
-                  colors.warning,
-                  colors.error,
-                  colors.primary[300],
-                  colors.secondary[300],
-                  colors.gray[400],
+                  theme.primary,
+                  theme.accent,
+                  theme.success,
+                  theme.warning,
+                  theme.error,
+                  theme.primarySubtle,
+                  theme.accentSubtle,
+                  theme.textTertiary,
                 ]}
-                labelRadius={({ innerRadius }) => innerRadius! + 40}
+                labelRadius={({ innerRadius }) =>
+                  (typeof innerRadius === 'number' ? innerRadius : 0) + 40
+                }
                 style={{
                   labels: {
-                    fill: colors.gray[700],
+                    fill: theme.textPrimary,
                     fontSize: 12,
                     fontWeight: '600',
                   },
@@ -240,12 +267,12 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ navigation, route 
                         width: `${option.percentage}%`,
                         backgroundColor:
                           index === 0
-                            ? colors.primary[500]
+                            ? theme.primary
                             : index === 1
-                            ? colors.secondary[500]
+                            ? theme.accent
                             : index === 2
-                            ? colors.success
-                            : colors.gray[400],
+                            ? theme.success
+                            : theme.textTertiary,
                       },
                     ]}
                   />
@@ -266,7 +293,7 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ navigation, route 
             }
             variant="outline"
             size="lg"
-            leftIcon={<Ionicons name="share-outline" size={20} color={colors.primary[500]} />}
+            leftIcon={<Ionicons name="share-outline" size={20} color={theme.primary} />}
           />
         </View>
       </ScrollView>
@@ -274,193 +301,194 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ navigation, route 
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.gray[50],
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  header: {
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.gray[900],
-    marginBottom: 8,
-  },
-  description: {
-    fontSize: 16,
-    color: colors.gray[600],
-    lineHeight: 22,
-  },
-  connectionBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.success + '15',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    alignSelf: 'flex-start',
-    marginTop: 12,
-    gap: 6,
-  },
-  connectionDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.success,
-  },
-  connectionText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.success,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 24,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 16,
-    alignItems: 'center',
-    gap: 8,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.gray[900],
-  },
-  statLabel: {
-    fontSize: 12,
-    color: colors.gray[500],
-    textTransform: 'uppercase',
-  },
-  chartToggle: {
-    flexDirection: 'row',
-    backgroundColor: colors.white,
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 20,
-    gap: 8,
-  },
-  toggleButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 8,
-    gap: 6,
-  },
-  toggleButtonActive: {
-    backgroundColor: colors.primary[500],
-  },
-  toggleText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.gray[600],
-  },
-  toggleTextActive: {
-    color: colors.white,
-  },
-  chartContainer: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pieContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  resultsList: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
-  },
-  resultsTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.gray[900],
-    marginBottom: 16,
-  },
-  resultItem: {
-    marginBottom: 20,
-  },
-  resultHeader: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 8,
-  },
-  resultRank: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.gray[100],
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  resultRankText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.gray[600],
-  },
-  resultInfo: {
-    flex: 1,
-  },
-  resultTextContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  resultEmoji: {
-    fontSize: 18,
-  },
-  resultText: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.gray[900],
-  },
-  resultStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  resultVotes: {
-    fontSize: 13,
-    color: colors.gray[600],
-  },
-  resultPercentage: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.primary[500],
-  },
-  resultBarContainer: {
-    height: 8,
-    backgroundColor: colors.gray[100],
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  resultBar: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  actions: {
-    gap: 12,
-  },
-});
+const getStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      padding: 20,
+      paddingBottom: 40,
+    },
+    header: {
+      marginBottom: 20,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: theme.textPrimary,
+      marginBottom: 8,
+    },
+    description: {
+      fontSize: 16,
+      color: theme.textSecondary,
+      lineHeight: 22,
+    },
+    connectionBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.successSubtle,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 20,
+      alignSelf: 'flex-start',
+      marginTop: 12,
+      gap: 6,
+    },
+    connectionDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: theme.success,
+    },
+    connectionText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: theme.success,
+    },
+    statsContainer: {
+      flexDirection: 'row',
+      gap: 12,
+      marginBottom: 24,
+    },
+    statCard: {
+      flex: 1,
+      backgroundColor: theme.surface,
+      borderRadius: 16,
+      padding: 16,
+      alignItems: 'center',
+      gap: 8,
+    },
+    statValue: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: theme.textPrimary,
+    },
+    statLabel: {
+      fontSize: 12,
+      color: theme.textSecondary,
+      textTransform: 'uppercase',
+    },
+    chartToggle: {
+      flexDirection: 'row',
+      backgroundColor: theme.surface,
+      borderRadius: 12,
+      padding: 4,
+      marginBottom: 20,
+      gap: 8,
+    },
+    toggleButton: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 10,
+      borderRadius: 8,
+      gap: 6,
+    },
+    toggleButtonActive: {
+      backgroundColor: theme.primary,
+    },
+    toggleText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.textSecondary,
+    },
+    toggleTextActive: {
+      color: theme.textOnPrimary,
+    },
+    chartContainer: {
+      backgroundColor: theme.surface,
+      borderRadius: 16,
+      padding: 20,
+      marginBottom: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    pieContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    resultsList: {
+      backgroundColor: theme.surface,
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 24,
+    },
+    resultsTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: theme.textPrimary,
+      marginBottom: 16,
+    },
+    resultItem: {
+      marginBottom: 20,
+    },
+    resultHeader: {
+      flexDirection: 'row',
+      gap: 12,
+      marginBottom: 8,
+    },
+    resultRank: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: theme.surfaceSubtle,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    resultRankText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: theme.textSecondary,
+    },
+    resultInfo: {
+      flex: 1,
+    },
+    resultTextContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 4,
+    },
+    resultEmoji: {
+      fontSize: 18,
+    },
+    resultText: {
+      flex: 1,
+      fontSize: 15,
+      fontWeight: '600',
+      color: theme.textPrimary,
+    },
+    resultStats: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    resultVotes: {
+      fontSize: 13,
+      color: theme.textSecondary,
+    },
+    resultPercentage: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: theme.primary,
+    },
+    resultBarContainer: {
+      height: 8,
+      backgroundColor: theme.surfaceSubtle,
+      borderRadius: 4,
+      overflow: 'hidden',
+    },
+    resultBar: {
+      height: '100%',
+      borderRadius: 4,
+    },
+    actions: {
+      gap: 12,
+    },
+  });

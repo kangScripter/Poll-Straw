@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 
 interface ModalProps {
   visible: boolean;
@@ -32,6 +32,8 @@ export const Modal: React.FC<ModalProps> = ({
   animationType = 'slide',
   presentationStyle = 'pageSheet',
 }) => {
+  const { theme } = useTheme();
+
   return (
     <RNModal
       visible={visible}
@@ -42,19 +44,26 @@ export const Modal: React.FC<ModalProps> = ({
     >
       {animationType === 'fade' ? (
         <TouchableWithoutFeedback onPress={onClose}>
-          <View style={styles.overlay}>
+          <View style={[styles.overlay, { backgroundColor: theme.overlay }]}>
             <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
               <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={styles.modalContent}
+                style={[styles.modalContent, {
+                  backgroundColor: theme.surface,
+                  borderTopWidth: 3,
+                  borderTopColor: theme.borderAccent,
+                }]}
               >
                 <SafeAreaView style={styles.safeArea} edges={['top']}>
                   {title && (
-                    <View style={styles.header}>
-                      <Text style={styles.title}>{title}</Text>
+                    <View style={[styles.header, { borderBottomColor: theme.divider }]}>
+                      <Text style={[styles.title, { color: theme.textPrimary }]}>{title}</Text>
                       {showCloseButton && (
-                        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                          <Ionicons name="close" size={24} color={colors.gray[600]} />
+                        <TouchableOpacity
+                          onPress={onClose}
+                          style={[styles.closeButton, { backgroundColor: theme.surfaceSubtle }]}
+                        >
+                          <Ionicons name="close" size={20} color={theme.textSecondary} />
                         </TouchableOpacity>
                       )}
                     </View>
@@ -66,12 +75,15 @@ export const Modal: React.FC<ModalProps> = ({
           </View>
         </TouchableWithoutFeedback>
       ) : (
-        <SafeAreaView style={styles.container} edges={['top']}>
-          <View style={styles.header}>
-            {title && <Text style={styles.title}>{title}</Text>}
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.surface }]} edges={['top']}>
+          <View style={[styles.header, { borderBottomColor: theme.divider }]}>
+            {title && <Text style={[styles.title, { color: theme.textPrimary }]}>{title}</Text>}
             {showCloseButton && (
-              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                <Ionicons name="close" size={24} color={colors.gray[600]} />
+              <TouchableOpacity
+                onPress={onClose}
+                style={[styles.closeButton, { backgroundColor: theme.surfaceSubtle }]}
+              >
+                <Ionicons name="close" size={20} color={theme.textSecondary} />
               </TouchableOpacity>
             )}
           </View>
@@ -90,26 +102,18 @@ export const Modal: React.FC<ModalProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.white,
   },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   modalContent: {
-    backgroundColor: colors.white,
     borderRadius: 20,
     width: '100%',
     maxWidth: 500,
     maxHeight: '80%',
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
   },
   safeArea: {
     flex: 1,
@@ -121,15 +125,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.gray[200],
   },
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: colors.gray[900],
   },
   closeButton: {
-    padding: 4,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   content: {
     flex: 1,

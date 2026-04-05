@@ -2,8 +2,8 @@
  * API tests: User profile (GET/PUT), GET /api/user/polls.
  */
 import request from 'supertest';
-import { app } from '../../app';
-import { globalSetup, globalTeardown } from '../globalSetup';
+import { app } from '../../app.js';
+import { globalSetup, globalTeardown } from '../globalSetup.js';
 
 const AUTH_BASE = '/api/auth';
 const USER_BASE = '/api/user';

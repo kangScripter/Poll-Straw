@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -17,7 +16,9 @@ import { useAuthStore } from '@/store/authStore';
 import { useRealTimeVotes } from '@/hooks/useRealTimeVotes';
 import { PollCard } from '@/components/poll/PollCard';
 import { Button } from '@/components/common/Button';
-import { colors } from '@/theme/colors';
+import { PollDetailSkeleton } from '@/components/common/SkeletonLoader';
+import { useTheme } from '@/theme';
+import { hapticLightImpact, hapticSelection, hapticSuccess } from '@/utils/haptics';
 import { RootStackParamList, Poll } from '@/types';
 
 type PollDetailScreenProps = {
@@ -26,6 +27,7 @@ type PollDetailScreenProps = {
 };
 
 export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, route }) => {
+  const { theme } = useTheme();
   const { pollId } = route.params;
   const { currentPoll, fetchPoll, castVote, deletePoll, closePoll, isLoading, error } = usePollStore();
   const { isAuthenticated, user } = useAuthStore();
@@ -54,7 +56,9 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
 
   // Single-select handler
   const handleSelectOption = (optionId: string) => {
-    if (displayPoll?.allowMultiple) {
+    if (!displayPoll) return;
+    hapticSelection();
+    if (displayPoll.allowMultiple) {
       // Toggle multi-select
       setSelectedOptionIds((prev) =>
         prev.includes(optionId) ? prev.filter((id) => id !== optionId) : [...prev, optionId]
@@ -81,6 +85,7 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
     }
 
     setIsSubmitting(true);
+    hapticLightImpact();
     try {
       if (displayPoll?.allowMultiple) {
         if (selectedOptionIds.length === 0) {
@@ -92,6 +97,7 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
         }
         setHasVoted(true);
         setSelectedOptionIds([]);
+        hapticSuccess();
         Alert.alert('Vote Cast!', 'Your votes have been recorded');
       } else {
         if (!selectedOptionId) {
@@ -105,6 +111,7 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
         await castVote(pollId, selectedOptionId);
         setHasVoted(true);
         setSelectedOptionId(null);
+        hapticSuccess();
         Alert.alert('Vote Cast!', 'Your vote has been recorded');
       }
     } catch (error: any) {
@@ -175,13 +182,89 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
     );
   };
 
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      padding: 20,
+      paddingBottom: 40,
+    },
+    errorContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+      gap: 16,
+    },
+    errorText: {
+      fontSize: 16,
+      color: theme.error,
+      textAlign: 'center',
+    },
+    connectionBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.successSubtle,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 20,
+      alignSelf: 'flex-start',
+      marginBottom: 16,
+      gap: 6,
+    },
+    connectionDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: theme.success,
+    },
+    connectionText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: theme.success,
+    },
+    actions: {
+      gap: 12,
+      marginBottom: 24,
+    },
+    infoCard: {
+      backgroundColor: theme.surface,
+      borderRadius: 16,
+      padding: 16,
+      gap: 12,
+    },
+    infoTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: theme.textPrimary,
+      marginBottom: 4,
+    },
+    infoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    infoText: {
+      fontSize: 14,
+      color: theme.textSecondary,
+    },
+  }), [theme]);
+
   if (isLoading && !currentPoll) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary[500]} />
-          <Text style={styles.loadingText}>Loading poll...</Text>
-        </View>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <PollDetailSkeleton />
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -190,7 +273,7 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
+          <Ionicons name="alert-circle-outline" size={48} color={theme.error} />
           <Text style={styles.errorText}>{error}</Text>
           <Button
             title="Go Back"
@@ -266,7 +349,7 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
             onPress={handleShare}
             variant="ghost"
             size="lg"
-            leftIcon={<Ionicons name="share-outline" size={20} color={colors.primary[500]} />}
+            leftIcon={<Ionicons name="share-outline" size={20} color={theme.primary} />}
           />
 
           {/* Creator-only actions */}
@@ -278,7 +361,7 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
                   onPress={handleEdit}
                   variant="outline"
                   size="lg"
-                  leftIcon={<Ionicons name="create-outline" size={20} color={colors.primary[500]} />}
+                  leftIcon={<Ionicons name="create-outline" size={20} color={theme.primary} />}
                 />
               )}
 
@@ -288,7 +371,7 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
                   onPress={handleClose}
                   variant="outline"
                   size="lg"
-                  leftIcon={<Ionicons name="lock-closed-outline" size={20} color={colors.warning || '#f59e0b'} />}
+                  leftIcon={<Ionicons name="lock-closed-outline" size={20} color={theme.warning} />}
                 />
               )}
 
@@ -297,7 +380,7 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
                 onPress={handleDelete}
                 variant="outline"
                 size="lg"
-                leftIcon={<Ionicons name="trash-outline" size={20} color={colors.error} />}
+                leftIcon={<Ionicons name="trash-outline" size={20} color={theme.error} />}
               />
             </>
           )}
@@ -308,7 +391,7 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
           <Text style={styles.infoTitle}>Poll Information</Text>
 
           <View style={styles.infoRow}>
-            <Ionicons name="calendar-outline" size={20} color={colors.gray[500]} />
+            <Ionicons name="calendar-outline" size={20} color={theme.textSecondary} />
             <Text style={styles.infoText}>
               Created {new Date(displayPoll.createdAt).toLocaleDateString()}
             </Text>
@@ -316,7 +399,7 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
 
           {displayPoll.deadline && (
             <View style={styles.infoRow}>
-              <Ionicons name="time-outline" size={20} color={colors.gray[500]} />
+              <Ionicons name="time-outline" size={20} color={theme.textSecondary} />
               <Text style={styles.infoText}>
                 Deadline: {new Date(displayPoll.deadline).toLocaleString()}
               </Text>
@@ -324,14 +407,14 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
           )}
 
           <View style={styles.infoRow}>
-            <Ionicons name="eye-outline" size={20} color={colors.gray[500]} />
+            <Ionicons name="eye-outline" size={20} color={theme.textSecondary} />
             <Text style={styles.infoText}>
               {displayPoll.viewCount} {displayPoll.viewCount === 1 ? 'view' : 'views'}
             </Text>
           </View>
 
           <View style={styles.infoRow}>
-            <Ionicons name="checkmark-circle-outline" size={20} color={colors.gray[500]} />
+            <Ionicons name="checkmark-circle-outline" size={20} color={theme.textSecondary} />
             <Text style={styles.infoText}>
               {displayPoll.totalVotes} {displayPoll.totalVotes === 1 ? 'vote' : 'votes'}
             </Text>
@@ -339,7 +422,7 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
 
           {displayPoll.allowMultiple && (
             <View style={styles.infoRow}>
-              <Ionicons name="checkbox-outline" size={20} color={colors.primary[500]} />
+              <Ionicons name="checkbox-outline" size={20} color={theme.primary} />
               <Text style={styles.infoText}>Multiple options allowed</Text>
             </View>
           )}
@@ -348,86 +431,3 @@ export const PollDetailScreen: React.FC<PollDetailScreenProps> = ({ navigation, 
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.gray[50],
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 16,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: colors.gray[600],
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    gap: 16,
-  },
-  errorText: {
-    fontSize: 16,
-    color: colors.error,
-    textAlign: 'center',
-  },
-  connectionBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.success + '15',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    alignSelf: 'flex-start',
-    marginBottom: 16,
-    gap: 6,
-  },
-  connectionDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.success,
-  },
-  connectionText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.success,
-  },
-  actions: {
-    gap: 12,
-    marginBottom: 24,
-  },
-  infoCard: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 16,
-    gap: 12,
-  },
-  infoTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.gray[900],
-    marginBottom: 4,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  infoText: {
-    fontSize: 14,
-    color: colors.gray[600],
-  },
-});

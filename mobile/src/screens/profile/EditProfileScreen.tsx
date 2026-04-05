@@ -5,14 +5,19 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/store/authStore';
 import { userApi } from '@/services/api/userApi';
 import { Input } from '@/components/common/Input';
 import { Button } from '@/components/common/Button';
-import { colors } from '@/theme/colors';
+import { AccentCard } from '@/components/common/AccentCard';
+import { useTheme } from '@/theme';
 import { RootStackParamList } from '@/types';
 
 type EditProfileScreenProps = {
@@ -20,6 +25,7 @@ type EditProfileScreenProps = {
 };
 
 export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => {
+  const { theme } = useTheme();
   const { user, setUser } = useAuthStore();
   const [name, setName] = useState(user?.name || '');
   const [isLoading, setIsLoading] = useState(false);
@@ -47,69 +53,101 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+    <SafeAreaView style={[styles.flex, { backgroundColor: theme.background }]} edges={['top']}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.flex}
       >
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Profile Information</Text>
-          
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email</Text>
-            <View style={styles.readOnlyInput}>
-              <Text style={styles.readOnlyText}>{user?.email}</Text>
-            </View>
-            <Text style={styles.hint}>Email cannot be changed</Text>
-          </View>
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <TouchableOpacity
+            style={[styles.backBtn, { backgroundColor: theme.surfaceSubtle }]}
+            onPress={() => navigation.goBack()}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
+            <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
+          </TouchableOpacity>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Name</Text>
-            <Input
-              placeholder="Enter your name"
-              value={name}
-              onChangeText={setName}
-              maxLength={50}
+          <AccentCard style={styles.card}>
+            <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Profile Information</Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>Email</Text>
+              <View
+                style={[
+                  styles.readOnlyInput,
+                  {
+                    backgroundColor: theme.surfaceSubtle,
+                    borderColor: theme.border,
+                  },
+                ]}
+              >
+                <Text style={[styles.readOnlyText, { color: theme.textTertiary }]}>{user?.email}</Text>
+              </View>
+              <Text style={[styles.hint, { color: theme.textTertiary }]}>Email cannot be changed</Text>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Input
+                label="Name"
+                placeholder="Enter your name"
+                value={name}
+                onChangeText={setName}
+                maxLength={50}
+                autoCapitalize="words"
+              />
+            </View>
+          </AccentCard>
+
+          <View style={styles.actions}>
+            <Button
+              title="Cancel"
+              onPress={() => navigation.goBack()}
+              variant="outline"
+              size="lg"
+              fullWidth
+            />
+            <Button
+              title={isLoading ? 'Saving...' : 'Save Changes'}
+              onPress={handleSave}
+              disabled={isLoading}
+              size="lg"
+              fullWidth
             />
           </View>
-        </View>
-
-        <View style={styles.buttonContainer}>
-          <Button
-            title={isLoading ? 'Saving...' : 'Save Changes'}
-            onPress={handleSave}
-            disabled={isLoading}
-            size="lg"
-          />
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.gray[50],
-  },
-  scrollView: {
+  flex: {
     flex: 1,
   },
   scrollContent: {
     padding: 20,
     paddingBottom: 40,
   },
-  section: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  card: {
+    marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: colors.gray[900],
     marginBottom: 20,
   },
   inputGroup: {
@@ -118,26 +156,21 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.gray[700],
     marginBottom: 8,
   },
   readOnlyInput: {
-    backgroundColor: colors.gray[50],
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: colors.gray[200],
   },
   readOnlyText: {
     fontSize: 16,
-    color: colors.gray[600],
   },
   hint: {
     fontSize: 12,
-    color: colors.gray[500],
     marginTop: 4,
   },
-  buttonContainer: {
-    marginTop: 8,
+  actions: {
+    gap: 12,
   },
 });

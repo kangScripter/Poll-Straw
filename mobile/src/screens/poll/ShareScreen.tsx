@@ -18,7 +18,7 @@ import * as Clipboard from 'expo-clipboard';
 import { QRCode } from '@/components/common/QRCode';
 import { usePollStore } from '@/store/pollStore';
 import { Button } from '@/components/common/Button';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 import { RootStackParamList } from '@/types';
 
 type ShareScreenProps = {
@@ -31,6 +31,7 @@ const QR_SIZE = SCREEN_WIDTH * 0.6;
 
 
 export const ShareScreen: React.FC<ShareScreenProps> = ({ navigation, route }) => {
+  const { theme } = useTheme();
   const { pollId, shareUrl } = route.params;
   const { currentPoll, fetchPoll } = usePollStore();
   const [copied, setCopied] = useState(false);
@@ -76,14 +77,14 @@ export const ShareScreen: React.FC<ShareScreenProps> = ({ navigation, route }) =
       id: 'copy',
       label: 'Copy Link',
       icon: 'copy-outline' as const,
-      color: colors.primary[500],
+      color: theme.primary,
       onPress: handleCopyLink,
     },
     {
       id: 'share',
       label: 'Share',
       icon: 'share-social-outline' as const,
-      color: colors.secondary[500],
+      color: theme.accent,
       onPress: handleShare,
     },
     {
@@ -94,7 +95,7 @@ export const ShareScreen: React.FC<ShareScreenProps> = ({ navigation, route }) =
       onPress: async () => {
         const message = `Check out this poll: ${poll?.title || 'Poll'}\n${fullUrl}`;
         const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(message)}`;
-        
+
         try {
           const canOpen = await Linking.canOpenURL(whatsappUrl);
           if (canOpen) {
@@ -116,7 +117,7 @@ export const ShareScreen: React.FC<ShareScreenProps> = ({ navigation, route }) =
       onPress: async () => {
         const message = `Check out this poll: ${poll?.title || 'Poll'}\n${fullUrl}`;
         const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}`;
-        
+
         try {
           await Linking.openURL(twitterUrl);
         } catch (error) {
@@ -125,6 +126,8 @@ export const ShareScreen: React.FC<ShareScreenProps> = ({ navigation, route }) =
       },
     },
   ];
+
+  const styles = getStyles(theme);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -168,7 +171,7 @@ export const ShareScreen: React.FC<ShareScreenProps> = ({ navigation, route }) =
               <Ionicons
                 name={copied ? 'checkmark' : 'copy-outline'}
                 size={20}
-                color={copied ? colors.white : colors.primary[500]}
+                color={copied ? theme.textOnPrimary : theme.primary}
               />
               <Text
                 style={[styles.copyButtonText, copied && styles.copyButtonTextActive]}
@@ -204,17 +207,17 @@ export const ShareScreen: React.FC<ShareScreenProps> = ({ navigation, route }) =
             <Text style={styles.sectionTitle}>Poll Stats</Text>
             <View style={styles.statsGrid}>
               <View style={styles.statItem}>
-                <Ionicons name="checkmark-circle" size={20} color={colors.primary[500]} />
+                <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
                 <Text style={styles.statValue}>{poll.totalVotes}</Text>
                 <Text style={styles.statLabel}>Votes</Text>
               </View>
               <View style={styles.statItem}>
-                <Ionicons name="eye" size={20} color={colors.secondary[500]} />
+                <Ionicons name="eye" size={20} color={theme.accent} />
                 <Text style={styles.statValue}>{poll.viewCount}</Text>
                 <Text style={styles.statLabel}>Views</Text>
               </View>
               <View style={styles.statItem}>
-                <Ionicons name="options" size={20} color={colors.success} />
+                <Ionicons name="options" size={20} color={theme.success} />
                 <Text style={styles.statValue}>{poll.options.length}</Text>
                 <Text style={styles.statLabel}>Options</Text>
               </View>
@@ -241,176 +244,177 @@ export const ShareScreen: React.FC<ShareScreenProps> = ({ navigation, route }) =
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.gray[50],
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  header: {
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.gray[900],
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.gray[600],
-    lineHeight: 22,
-  },
-  qrSection: {
-    backgroundColor: colors.white,
-    borderRadius: 20,
-    padding: 24,
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.gray[900],
-    marginBottom: 16,
-  },
-  qrContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  qrCode: {
-    width: QR_SIZE,
-    height: QR_SIZE,
-    backgroundColor: colors.gray[50],
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: colors.gray[200],
-    gap: 8,
-  },
-  qrText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.gray[600],
-  },
-  qrUrl: {
-    fontSize: 10,
-    color: colors.gray[400],
-    maxWidth: QR_SIZE - 20,
-  },
-  qrErrorText: {
-    fontSize: 12,
-    color: colors.error,
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  qrHint: {
-    fontSize: 14,
-    color: colors.gray[500],
-    textAlign: 'center',
-  },
-  linkSection: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-  },
-  linkContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  linkText: {
-    flex: 1,
-    fontSize: 14,
-    color: colors.gray[700],
-    padding: 12,
-    backgroundColor: colors.gray[50],
-    borderRadius: 8,
-  },
-  copyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.primary[500],
-    gap: 6,
-  },
-  copyButtonActive: {
-    backgroundColor: colors.primary[500],
-    borderColor: colors.primary[500],
-  },
-  copyButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary[500],
-  },
-  copyButtonTextActive: {
-    color: colors.white,
-  },
-  shareSection: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-  },
-  shareGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-  },
-  shareOption: {
-    width: (SCREEN_WIDTH - 80) / 2,
-    alignItems: 'center',
-    gap: 8,
-  },
-  shareIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  shareLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.gray[700],
-  },
-  statsSection: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  statItem: {
-    alignItems: 'center',
-    gap: 8,
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.gray[900],
-  },
-  statLabel: {
-    fontSize: 12,
-    color: colors.gray[500],
-    textTransform: 'uppercase',
-  },
-  actions: {
-    gap: 12,
-  },
-});
+const getStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      padding: 20,
+      paddingBottom: 40,
+    },
+    header: {
+      marginBottom: 24,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: '700',
+      color: theme.textPrimary,
+      marginBottom: 8,
+    },
+    subtitle: {
+      fontSize: 16,
+      color: theme.textSecondary,
+      lineHeight: 22,
+    },
+    qrSection: {
+      backgroundColor: theme.surface,
+      borderRadius: 20,
+      padding: 24,
+      alignItems: 'center',
+      marginBottom: 24,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: theme.textPrimary,
+      marginBottom: 16,
+    },
+    qrContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 16,
+    },
+    qrCode: {
+      width: QR_SIZE,
+      height: QR_SIZE,
+      backgroundColor: theme.background,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 2,
+      borderColor: theme.border,
+      gap: 8,
+    },
+    qrText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.textSecondary,
+    },
+    qrUrl: {
+      fontSize: 10,
+      color: theme.textTertiary,
+      maxWidth: QR_SIZE - 20,
+    },
+    qrErrorText: {
+      fontSize: 12,
+      color: theme.error,
+      marginTop: 8,
+      textAlign: 'center',
+    },
+    qrHint: {
+      fontSize: 14,
+      color: theme.textSecondary,
+      textAlign: 'center',
+    },
+    linkSection: {
+      backgroundColor: theme.surface,
+      borderRadius: 16,
+      padding: 20,
+      marginBottom: 24,
+    },
+    linkContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    linkText: {
+      flex: 1,
+      fontSize: 14,
+      color: theme.textPrimary,
+      padding: 12,
+      backgroundColor: theme.background,
+      borderRadius: 8,
+    },
+    copyButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.primary,
+      gap: 6,
+    },
+    copyButtonActive: {
+      backgroundColor: theme.primary,
+      borderColor: theme.primary,
+    },
+    copyButtonText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.primary,
+    },
+    copyButtonTextActive: {
+      color: theme.textOnPrimary,
+    },
+    shareSection: {
+      backgroundColor: theme.surface,
+      borderRadius: 16,
+      padding: 20,
+      marginBottom: 24,
+    },
+    shareGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 16,
+    },
+    shareOption: {
+      width: (SCREEN_WIDTH - 80) / 2,
+      alignItems: 'center',
+      gap: 8,
+    },
+    shareIcon: {
+      width: 64,
+      height: 64,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    shareLabel: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.textPrimary,
+    },
+    statsSection: {
+      backgroundColor: theme.surface,
+      borderRadius: 16,
+      padding: 20,
+      marginBottom: 24,
+    },
+    statsGrid: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+    },
+    statItem: {
+      alignItems: 'center',
+      gap: 8,
+    },
+    statValue: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: theme.textPrimary,
+    },
+    statLabel: {
+      fontSize: 12,
+      color: theme.textSecondary,
+      textTransform: 'uppercase',
+    },
+    actions: {
+      gap: 12,
+    },
+  });

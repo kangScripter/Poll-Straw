@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { PollOption as PollOptionType } from '@/types';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
+import { AnimatedNumber } from '@/components/common/AnimatedNumber';
 
 interface PollOptionProps {
   option: PollOptionType;
@@ -10,6 +12,7 @@ interface PollOptionProps {
   isSelected?: boolean;
   isCheckbox?: boolean;
   onPress?: () => void;
+  colorIndex?: number;
 }
 
 export const PollOption: React.FC<PollOptionProps> = ({
@@ -18,28 +21,48 @@ export const PollOption: React.FC<PollOptionProps> = ({
   isSelected = false,
   isCheckbox = false,
   onPress,
+  colorIndex = 0,
 }) => {
+  const { theme } = useTheme();
   const isInteractive = !!onPress;
 
-  const OptionWrapper = isInteractive ? TouchableOpacity : View;
+  const optionColor = theme.pollOptionColors[colorIndex % theme.pollOptionColors.length];
 
-  return (
-    <OptionWrapper
-      style={[
-        styles.container,
-        isSelected && styles.containerSelected,
-        !isInteractive && styles.containerDisabled,
-      ]}
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
+  const progressPct = useSharedValue(showResults ? option.percentage : 0);
+
+  useEffect(() => {
+    if (showResults) {
+      progressPct.value = withSpring(option.percentage, { damping: 18, stiffness: 180 });
+    } else {
+      progressPct.value = 0;
+    }
+  }, [option.percentage, showResults]);
+
+  const animatedBarStyle = useAnimatedStyle(() => ({
+    width: `${progressPct.value}%`,
+  }));
+
+  const rowStyle = [
+    styles.container,
+    {
+      backgroundColor: isSelected ? theme.primarySubtle : theme.surfaceSubtle,
+      borderColor: isSelected ? theme.primary : 'transparent',
+    },
+  ];
+
+  const inner = (
+    <>
       {/* Progress bar background */}
       {showResults && (
-        <View
+        <Animated.View
           style={[
             styles.progressBar,
-            { width: `${option.percentage}%` },
-            isSelected && styles.progressBarSelected,
+            {
+              backgroundColor: isSelected
+                ? theme.primary + '25'
+                : optionColor + '20',
+            },
+            animatedBarStyle,
           ]}
         />
       )}
@@ -47,30 +70,43 @@ export const PollOption: React.FC<PollOptionProps> = ({
       {/* Content */}
       <View style={styles.content}>
         <View style={styles.leftContent}>
-          {/* Selection indicator — radio for single-select, checkbox for multi-select */}
+          {/* Selection indicator */}
           {isInteractive && (
             isCheckbox ? (
-              <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+              <View style={[
+                styles.checkbox,
+                {
+                  borderColor: isSelected ? theme.primary : theme.inputBorder,
+                  backgroundColor: isSelected ? theme.primary : 'transparent',
+                },
+              ]}>
                 {isSelected && (
-                  <Ionicons name="checkmark" size={14} color={colors.white} />
+                  <Ionicons name="checkmark" size={14} color={theme.textOnPrimary} />
                 )}
               </View>
             ) : (
-              <View style={[styles.radio, isSelected && styles.radioSelected]}>
+              <View style={[
+                styles.radio,
+                { borderColor: isSelected ? theme.primary : theme.inputBorder },
+              ]}>
                 {isSelected && (
-                  <View style={styles.radioInner} />
+                  <View style={[styles.radioInner, { backgroundColor: theme.primary }]} />
                 )}
               </View>
             )
           )}
 
           {/* Emoji */}
-          {option.emoji && (
-            <Text style={styles.emoji}>{option.emoji}</Text>
-          )}
+          {option.emoji && <Text style={styles.emoji}>{option.emoji}</Text>}
 
           {/* Text */}
-          <Text style={[styles.text, isSelected && styles.textSelected]} numberOfLines={2}>
+          <Text
+            style={[
+              styles.text,
+              { color: isSelected ? theme.primary : theme.textPrimary },
+            ]}
+            numberOfLines={2}
+          >
             {option.text}
           </Text>
         </View>
@@ -78,52 +114,50 @@ export const PollOption: React.FC<PollOptionProps> = ({
         {/* Results */}
         {showResults && (
           <View style={styles.results}>
-            <Text style={[styles.percentage, isSelected && styles.percentageSelected]}>
+            <Text style={[
+              styles.percentage,
+              { color: isSelected ? theme.primary : theme.textPrimary },
+            ]}>
               {option.percentage}%
             </Text>
-            <Text style={styles.voteCount}>
-              {option.voteCount}
-            </Text>
+            <AnimatedNumber style={[styles.voteCount, { color: theme.textTertiary }]} value={option.voteCount} />
           </View>
         )}
       </View>
-    </OptionWrapper>
+    </>
   );
+
+  if (onPress) {
+    return (
+      <TouchableOpacity style={rowStyle} onPress={onPress} activeOpacity={0.7}>
+        {inner}
+      </TouchableOpacity>
+    );
+  }
+
+  return <View style={rowStyle}>{inner}</View>;
 };
 
 const styles = StyleSheet.create({
   container: {
     position: 'relative',
-    backgroundColor: colors.gray[50],
-    borderRadius: 12,
+    borderRadius: 8,
     marginBottom: 8,
     overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  containerSelected: {
-    borderColor: colors.primary[500],
-    backgroundColor: colors.primary[50],
-  },
-  containerDisabled: {
-    opacity: 1,
+    borderWidth: 1.5,
   },
   progressBar: {
     position: 'absolute',
     top: 0,
     left: 0,
     bottom: 0,
-    backgroundColor: colors.gray[200],
-    borderRadius: 10,
-  },
-  progressBarSelected: {
-    backgroundColor: colors.primary[200],
+    borderRadius: 6,
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 14,
+    padding: 12,
     zIndex: 1,
   },
   leftContent: {
@@ -137,31 +171,21 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: colors.gray[300],
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  radioSelected: {
-    borderColor: colors.primary[500],
   },
   radioInner: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: colors.primary[500],
   },
   checkbox: {
     width: 20,
     height: 20,
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: colors.gray[300],
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  checkboxSelected: {
-    borderColor: colors.primary[500],
-    backgroundColor: colors.primary[500],
   },
   emoji: {
     fontSize: 20,
@@ -170,11 +194,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: '500',
-    color: colors.gray[800],
-  },
-  textSelected: {
-    color: colors.primary[700],
-    fontWeight: '600',
   },
   results: {
     alignItems: 'flex-end',
@@ -182,13 +201,8 @@ const styles = StyleSheet.create({
   percentage: {
     fontSize: 15,
     fontWeight: '700',
-    color: colors.gray[700],
-  },
-  percentageSelected: {
-    color: colors.primary[600],
   },
   voteCount: {
-    fontSize: 12,
-    color: colors.gray[500],
+    fontSize: 11,
   },
 });

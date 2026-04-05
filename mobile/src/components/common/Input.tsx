@@ -50,9 +50,9 @@ export const Input: React.FC<InputProps> = ({
           style={[
             styles.input,
             { color: theme.textPrimary },
-            leftIcon && styles.inputWithLeftIcon,
-            (rightIcon || isPassword) && styles.inputWithRightIcon,
-            style,
+            ...(leftIcon ? [styles.inputWithLeftIcon] : []),
+            ...(rightIcon || isPassword ? [styles.inputWithRightIcon] : []),
+            ...(style ? [style] : []),
           ]}
           placeholderTextColor={theme.textTertiary}
           onFocus={() => setIsFocused(true)}

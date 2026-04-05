@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -14,7 +13,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { adminApi, AdminAnalytics } from '@/services/api/adminApi';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/common/Button';
-import { colors } from '@/theme/colors';
+import { AdminStatsSkeleton, SkeletonLoader } from '@/components/common/SkeletonLoader';
+import { useTheme } from '@/theme';
 import { RootStackParamList, Poll } from '@/types';
 
 type AdminDashboardScreenProps = {
@@ -22,10 +22,13 @@ type AdminDashboardScreenProps = {
 };
 
 export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navigation }) => {
+  const { theme } = useTheme();
   const { user } = useAuthStore();
   const [analytics, setAnalytics] = useState<AdminAnalytics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   useEffect(() => {
     loadAnalytics();
@@ -55,7 +58,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.errorContainer}>
-          <Ionicons name="lock-closed" size={64} color={colors.error} />
+          <Ionicons name="lock-closed" size={64} color={theme.error} />
           <Text style={styles.errorTitle}>Access Denied</Text>
           <Text style={styles.errorText}>You need admin privileges to access this screen</Text>
           <Button
@@ -72,10 +75,19 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
   if (isLoading && !analytics) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary[500]} />
-          <Text style={styles.loadingText}>Loading analytics...</Text>
-        </View>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <SkeletonLoader layout={[{ type: 'rect', width: '70%', height: 28, marginBottom: 8 }]} />
+          <SkeletonLoader layout={[{ type: 'rect', width: '50%', height: 14, marginBottom: 24 }]} />
+          <AdminStatsSkeleton />
+          <SkeletonLoader layout={[{ type: 'rect', width: '40%', height: 20, marginBottom: 16 }]} />
+          <SkeletonLoader layout={[{ type: 'rect', width: '100%', height: 72, marginBottom: 8 }]} />
+          <SkeletonLoader layout={[{ type: 'rect', width: '100%', height: 72, marginBottom: 8 }]} />
+          <SkeletonLoader layout={[{ type: 'rect', width: '100%', height: 72 }]} />
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -90,7 +102,12 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[theme.primary]}
+            tintColor={theme.primary}
+          />
         }
         showsVerticalScrollIndicator={false}
       >
@@ -111,15 +128,15 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
               }
             }}
           >
-            <Ionicons name="shield-checkmark" size={24} color={colors.primary[500]} />
+            <Ionicons name="shield-checkmark" size={24} color={theme.primary} />
           </TouchableOpacity>
         </View>
 
         {/* Overview Stats */}
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
-            <View style={[styles.statIcon, { backgroundColor: colors.primary[50] }]}>
-              <Ionicons name="document-text" size={24} color={colors.primary[500]} />
+            <View style={[styles.statIcon, { backgroundColor: theme.primarySubtle }]}>
+              <Ionicons name="document-text" size={24} color={theme.primary} />
             </View>
             <Text style={styles.statValue}>{analytics.overview.totalPolls.toLocaleString()}</Text>
             <Text style={styles.statLabel}>Total Polls</Text>
@@ -127,8 +144,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
           </View>
 
           <View style={styles.statCard}>
-            <View style={[styles.statIcon, { backgroundColor: colors.secondary[50] }]}>
-              <Ionicons name="checkmark-circle" size={24} color={colors.secondary[500]} />
+            <View style={[styles.statIcon, { backgroundColor: theme.accentSubtle }]}>
+              <Ionicons name="checkmark-circle" size={24} color={theme.accent} />
             </View>
             <Text style={styles.statValue}>{analytics.overview.totalVotes.toLocaleString()}</Text>
             <Text style={styles.statLabel}>Total Votes</Text>
@@ -136,8 +153,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
           </View>
 
           <View style={styles.statCard}>
-            <View style={[styles.statIcon, { backgroundColor: colors.success + '15' }]}>
-              <Ionicons name="people" size={24} color={colors.success} />
+            <View style={[styles.statIcon, { backgroundColor: theme.successSubtle }]}>
+              <Ionicons name="people" size={24} color={theme.success} />
             </View>
             <Text style={styles.statValue}>{analytics.overview.totalUsers.toLocaleString()}</Text>
             <Text style={styles.statLabel}>Total Users</Text>
@@ -145,8 +162,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
           </View>
 
           <View style={styles.statCard}>
-            <View style={[styles.statIcon, { backgroundColor: colors.warning + '15' }]}>
-              <Ionicons name="alert-circle" size={24} color={colors.warning} />
+            <View style={[styles.statIcon, { backgroundColor: theme.warningSubtle }]}>
+              <Ionicons name="alert-circle" size={24} color={theme.warning} />
             </View>
             <Text style={styles.statValue}>{analytics.overview.pendingReports}</Text>
             <Text style={styles.statLabel}>Pending Reports</Text>
@@ -169,7 +186,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 }
               }}
             >
-              <Ionicons name="shield-checkmark" size={28} color={colors.primary[500]} />
+              <Ionicons name="shield-checkmark" size={28} color={theme.primary} />
               <Text style={styles.actionLabel}>Moderation</Text>
             </TouchableOpacity>
 
@@ -184,7 +201,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 }
               }}
             >
-              <Ionicons name="people" size={28} color={colors.secondary[500]} />
+              <Ionicons name="people" size={28} color={theme.accent} />
               <Text style={styles.actionLabel}>Users</Text>
             </TouchableOpacity>
 
@@ -199,7 +216,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 }
               }}
             >
-              <Ionicons name="flag" size={28} color={colors.warning} />
+              <Ionicons name="flag" size={28} color={theme.warning} />
               <Text style={styles.actionLabel}>Reports</Text>
               {analytics.overview.pendingReports > 0 && (
                 <View style={styles.badge}>
@@ -236,16 +253,16 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                   </Text>
                   <View style={styles.pollMeta}>
                     <View style={styles.pollMetaItem}>
-                      <Ionicons name="checkmark-circle" size={14} color={colors.gray[500]} />
+                      <Ionicons name="checkmark-circle" size={14} color={theme.textTertiary} />
                       <Text style={styles.pollMetaText}>{poll.totalVotes} votes</Text>
                     </View>
                     <View style={styles.pollMetaItem}>
-                      <Ionicons name="eye" size={14} color={colors.gray[500]} />
+                      <Ionicons name="eye" size={14} color={theme.textTertiary} />
                       <Text style={styles.pollMetaText}>{poll.viewCount} views</Text>
                     </View>
                   </View>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color={colors.gray[400]} />
+                <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
               </TouchableOpacity>
             ))}
           </View>
@@ -276,7 +293,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                     {new Date(poll.createdAt).toLocaleDateString()}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color={colors.gray[400]} />
+                <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
               </TouchableOpacity>
             ))}
           </View>
@@ -286,192 +303,183 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.gray[50],
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 16,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: colors.gray[600],
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-    gap: 16,
-  },
-  errorTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.gray[900],
-  },
-  errorText: {
-    fontSize: 16,
-    color: colors.gray[600],
-    textAlign: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.gray[900],
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: colors.gray[500],
-  },
-  settingsButton: {
-    padding: 8,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 24,
-  },
-  statCard: {
-    width: '48%',
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 16,
-    gap: 8,
-  },
-  statIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.gray[900],
-  },
-  statLabel: {
-    fontSize: 12,
-    color: colors.gray[500],
-    textTransform: 'uppercase',
-  },
-  statChange: {
-    fontSize: 11,
-    color: colors.success,
-    fontWeight: '600',
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.gray[900],
-    marginBottom: 16,
-  },
-  actionsGrid: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  actionCard: {
-    flex: 1,
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    position: 'relative',
-  },
-  actionLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.gray[700],
-  },
-  badge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: colors.error,
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 6,
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  pollItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
-    gap: 12,
-  },
-  pollRank: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.primary[50],
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pollRankText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.primary[500],
-  },
-  pollInfo: {
-    flex: 1,
-  },
-  pollTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.gray[900],
-    marginBottom: 4,
-  },
-  pollTime: {
-    fontSize: 12,
-    color: colors.gray[500],
-  },
-  pollMeta: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 4,
-  },
-  pollMetaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  pollMetaText: {
-    fontSize: 12,
-    color: colors.gray[500],
-  },
-});
+const createStyles = (theme: any) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      padding: 20,
+      paddingBottom: 40,
+    },
+    errorContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 40,
+      gap: 16,
+    },
+    errorTitle: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: theme.textPrimary,
+    },
+    errorText: {
+      fontSize: 16,
+      color: theme.textSecondary,
+      textAlign: 'center',
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: 24,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: '700',
+      color: theme.textPrimary,
+      marginBottom: 4,
+    },
+    subtitle: {
+      fontSize: 14,
+      color: theme.textTertiary,
+    },
+    settingsButton: {
+      padding: 8,
+    },
+    statsGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 12,
+      marginBottom: 24,
+    },
+    statCard: {
+      width: '48%',
+      backgroundColor: theme.surface,
+      borderRadius: 16,
+      padding: 16,
+      gap: 8,
+    },
+    statIcon: {
+      width: 48,
+      height: 48,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 4,
+    },
+    statValue: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: theme.textPrimary,
+    },
+    statLabel: {
+      fontSize: 12,
+      color: theme.textTertiary,
+      textTransform: 'uppercase',
+    },
+    statChange: {
+      fontSize: 11,
+      color: theme.success,
+      fontWeight: '600',
+    },
+    section: {
+      marginBottom: 24,
+    },
+    sectionTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: theme.textPrimary,
+      marginBottom: 16,
+    },
+    actionsGrid: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    actionCard: {
+      flex: 1,
+      backgroundColor: theme.surface,
+      borderRadius: 16,
+      padding: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      position: 'relative',
+    },
+    actionLabel: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.textSecondary,
+    },
+    badge: {
+      position: 'absolute',
+      top: 8,
+      right: 8,
+      backgroundColor: theme.error,
+      borderRadius: 10,
+      minWidth: 20,
+      height: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 6,
+    },
+    badgeText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: theme.textOnPrimary,
+    },
+    pollItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.surface,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 8,
+      gap: 12,
+    },
+    pollRank: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: theme.primarySubtle,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    pollRankText: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: theme.primary,
+    },
+    pollInfo: {
+      flex: 1,
+    },
+    pollTitle: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: theme.textPrimary,
+      marginBottom: 4,
+    },
+    pollTime: {
+      fontSize: 12,
+      color: theme.textTertiary,
+    },
+    pollMeta: {
+      flexDirection: 'row',
+      gap: 12,
+      marginTop: 4,
+    },
+    pollMetaItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    pollMetaText: {
+      fontSize: 12,
+      color: theme.textTertiary,
+    },
+  });

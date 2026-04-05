@@ -63,17 +63,17 @@ export const Button: React.FC<ButtonProps> = ({
     styles.base,
     variantStyles[variant],
     styles[`size_${size}` as keyof typeof styles] as ViewStyle,
-    fullWidth && styles.fullWidth,
-    isDisabled && styles.disabled,
-    style as ViewStyle,
-  ].filter(Boolean);
+    ...(fullWidth ? [styles.fullWidth] : []),
+    ...(isDisabled ? [styles.disabled] : []),
+    ...(style ? [style] : []),
+  ];
 
   const textStyles: TextStyle[] = [
     styles.text,
     { color: variantTextColors[variant] },
     styles[`text_${size}` as keyof typeof styles] as TextStyle,
-    textStyle as TextStyle,
-  ].filter(Boolean);
+    ...(textStyle ? [textStyle] : []),
+  ];
 
   return (
     <TouchableOpacity

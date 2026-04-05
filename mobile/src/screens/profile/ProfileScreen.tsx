@@ -6,22 +6,24 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuthStore } from '@/store/authStore';
 import { userApi, UserProfile } from '@/services/api/userApi';
 import { Button } from '@/components/common/Button';
-import { colors } from '@/theme/colors';
-import { RootStackParamList } from '@/types';
+import { ThemeToggle } from '@/components/common/ThemeToggle';
+import { ProfileSkeleton } from '@/components/common/SkeletonLoader';
+import { useTheme } from '@/theme';
+import { MainTabScreenNavigationProp, RootStackParamList } from '@/types';
 
 type ProfileScreenProps = {
-  navigation: NativeStackNavigationProp<RootStackParamList>;
+  navigation: MainTabScreenNavigationProp<'Profile'>;
 };
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
+  const { theme } = useTheme();
   const { user, logout, isAuthenticated } = useAuthStore();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,6 +33,13 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
       loadProfile();
     }
   }, [isAuthenticated]);
+
+  const resetToLogin = () => {
+    navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.reset({
+      index: 0,
+      routes: [{ name: 'Login' }],
+    });
+  };
 
   const loadProfile = async () => {
     try {
@@ -57,10 +66,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
           style: 'destructive',
           onPress: async () => {
             await logout();
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Login' }],
-            });
+            resetToLogin();
           },
         },
       ]
@@ -81,10 +87,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
               await userApi.deleteAccount();
               Alert.alert('Account Deleted', 'Your account has been deleted');
               await logout();
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Login' }],
-              });
+              resetToLogin();
             } catch (error: any) {
               Alert.alert('Error', error.message || 'Failed to delete account');
             }
@@ -96,11 +99,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
 
   if (!isAuthenticated) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
         <View style={styles.emptyContainer}>
-          <Ionicons name="person-circle-outline" size={64} color={colors.gray[400]} />
-          <Text style={styles.emptyTitle}>Not Logged In</Text>
-          <Text style={styles.emptyDescription}>
+          <Ionicons name="person-circle-outline" size={64} color={theme.textTertiary} />
+          <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>Not Logged In</Text>
+          <Text style={[styles.emptyDescription, { color: theme.textSecondary }]}>
             Please login to view your profile
           </Text>
           <Button
@@ -115,17 +118,20 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary[500]} />
-          <Text style={styles.loadingText}>Loading profile...</Text>
-        </View>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[styles.scrollContent, { paddingTop: 24 }]}
+          showsVerticalScrollIndicator={false}
+        >
+          <ProfileSkeleton />
+        </ScrollView>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -133,29 +139,29 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
       >
         {/* Profile Header */}
         <View style={styles.header}>
-          <View style={styles.avatar}>
-            <Ionicons name="person" size={48} color={colors.primary[500]} />
+          <View style={[styles.avatar, { backgroundColor: theme.primarySubtle, borderColor: theme.primary }]}>
+            <Ionicons name="person" size={40} color={theme.primary} />
           </View>
-          <Text style={styles.name}>{user?.name || 'User'}</Text>
-          <Text style={styles.email}>{user?.email}</Text>
+          <Text style={[styles.name, { color: theme.textPrimary }]}>{user?.name || 'User'}</Text>
+          <Text style={[styles.email, { color: theme.textSecondary }]}>{user?.email}</Text>
         </View>
 
         {/* Stats */}
         {profile && (
           <View style={styles.statsContainer}>
-            <View style={styles.statCard}>
-              <Ionicons name="document-text" size={24} color={colors.primary[500]} />
-              <Text style={styles.statValue}>{profile.pollsCount || 0}</Text>
-              <Text style={styles.statLabel}>Polls</Text>
+            <View style={[styles.statCard, { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }]}>
+              <Ionicons name="document-text" size={24} color={theme.primary} />
+              <Text style={[styles.statValue, { color: theme.textPrimary }]}>{profile.pollsCount || 0}</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Polls</Text>
             </View>
-            <View style={styles.statCard}>
-              <Ionicons name="checkmark-circle" size={24} color={colors.secondary[500]} />
-              <Text style={styles.statValue}>{profile.votesCount || 0}</Text>
-              <Text style={styles.statLabel}>Votes</Text>
+            <View style={[styles.statCard, { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }]}>
+              <Ionicons name="checkmark-circle" size={24} color={theme.accent} />
+              <Text style={[styles.statValue, { color: theme.textPrimary }]}>{profile.votesCount || 0}</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Votes</Text>
             </View>
-            <View style={styles.statCard}>
-              <Ionicons name="calendar" size={24} color={colors.success} />
-              <Text style={styles.statValue}>
+            <View style={[styles.statCard, { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }]}>
+              <Ionicons name="calendar" size={24} color={theme.success} />
+              <Text style={[styles.statValue, { color: theme.textPrimary }]}>
                 {profile.createdAt
                   ? new Date(profile.createdAt).toLocaleDateString('en-US', {
                       month: 'short',
@@ -163,80 +169,91 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                     })
                   : 'N/A'}
               </Text>
-              <Text style={styles.statLabel}>Member Since</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Member Since</Text>
             </View>
           </View>
         )}
 
         {/* Menu Items */}
-        <View style={styles.menuSection}>
+        <View style={[styles.menuSection, { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }]}>
           <TouchableOpacity
-            style={styles.menuItem}
+            style={[styles.menuItem, { borderBottomColor: theme.divider }]}
             onPress={() => navigation.navigate('MyPolls')}
           >
             <View style={styles.menuItemLeft}>
-              <View style={[styles.menuIcon, { backgroundColor: colors.primary[50] }]}>
-                <Ionicons name="document-text-outline" size={20} color={colors.primary[500]} />
+              <View style={[styles.menuIcon, { backgroundColor: theme.primarySubtle }]}>
+                <Ionicons name="document-text-outline" size={20} color={theme.primary} />
               </View>
-              <Text style={styles.menuText}>My Polls</Text>
+              <Text style={[styles.menuText, { color: theme.textPrimary }]}>My Polls</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.gray[400]} />
+            <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.menuItem}
+            style={[styles.menuItem, { borderBottomColor: theme.divider }]}
             onPress={() => navigation.navigate('EditProfile')}
           >
             <View style={styles.menuItemLeft}>
-              <View style={[styles.menuIcon, { backgroundColor: colors.secondary[50] }]}>
-                <Ionicons name="create-outline" size={20} color={colors.secondary[500]} />
+              <View style={[styles.menuIcon, { backgroundColor: theme.accentSubtle }]}>
+                <Ionicons name="create-outline" size={20} color={theme.accent} />
               </View>
-              <Text style={styles.menuText}>Edit Profile</Text>
+              <Text style={[styles.menuText, { color: theme.textPrimary }]}>Edit Profile</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.gray[400]} />
+            <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.menuItem}
+            style={[styles.menuItem, { borderBottomColor: theme.divider }]}
             onPress={() => navigation.navigate('Dashboard')}
           >
             <View style={styles.menuItemLeft}>
-              <View style={[styles.menuIcon, { backgroundColor: colors.success + '15' }]}>
-                <Ionicons name="grid-outline" size={20} color={colors.success} />
+              <View style={[styles.menuIcon, { backgroundColor: theme.successSubtle }]}>
+                <Ionicons name="grid-outline" size={20} color={theme.success} />
               </View>
-              <Text style={styles.menuText}>Dashboard</Text>
+              <Text style={[styles.menuText, { color: theme.textPrimary }]}>Dashboard</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.gray[400]} />
+            <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
           </TouchableOpacity>
+
+          {/* Theme Toggle */}
+          <View style={[styles.menuItem, { borderBottomColor: theme.divider }]}>
+            <View style={styles.menuItemLeft}>
+              <View style={[styles.menuIcon, { backgroundColor: theme.warningSubtle }]}>
+                <Ionicons name="sunny-outline" size={20} color={theme.warning} />
+              </View>
+              <Text style={[styles.menuText, { color: theme.textPrimary }]}>Theme</Text>
+            </View>
+            <ThemeToggle />
+          </View>
 
           {user?.role === 'ADMIN' && (
             <>
-              <View style={styles.divider} />
-              <Text style={styles.sectionLabel}>Admin</Text>
+              <View style={[styles.divider, { backgroundColor: theme.divider }]} />
+              <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>Admin</Text>
               <TouchableOpacity
-                style={styles.menuItem}
+                style={[styles.menuItem, { borderBottomColor: theme.divider }]}
                 onPress={() => navigation.navigate('AdminDashboard')}
               >
                 <View style={styles.menuItemLeft}>
-                  <View style={[styles.menuIcon, { backgroundColor: colors.primary[50] }]}>
-                    <Ionicons name="shield-checkmark" size={20} color={colors.primary[500]} />
+                  <View style={[styles.menuIcon, { backgroundColor: theme.primarySubtle }]}>
+                    <Ionicons name="shield-checkmark" size={20} color={theme.primary} />
                   </View>
-                  <Text style={styles.menuText}>Admin Dashboard</Text>
+                  <Text style={[styles.menuText, { color: theme.textPrimary }]}>Admin Dashboard</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color={colors.gray[400]} />
+                <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.menuItem}
+                style={[styles.menuItem, { borderBottomColor: theme.divider }]}
                 onPress={() => navigation.navigate('AdminModeration')}
               >
                 <View style={styles.menuItemLeft}>
-                  <View style={[styles.menuIcon, { backgroundColor: colors.warning + '15' }]}>
-                    <Ionicons name="flag" size={20} color={colors.warning} />
+                  <View style={[styles.menuIcon, { backgroundColor: theme.warningSubtle }]}>
+                    <Ionicons name="flag" size={20} color={theme.warning} />
                   </View>
-                  <Text style={styles.menuText}>Moderation</Text>
+                  <Text style={[styles.menuText, { color: theme.textPrimary }]}>Moderation</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color={colors.gray[400]} />
+                <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
               </TouchableOpacity>
             </>
           )}
@@ -249,15 +266,15 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
             onPress={handleLogout}
             variant="outline"
             size="lg"
-            leftIcon={<Ionicons name="log-out-outline" size={20} color={colors.error} />}
+            leftIcon={<Ionicons name="log-out-outline" size={20} color={theme.error} />}
           />
 
           <TouchableOpacity
             style={styles.deleteButton}
             onPress={handleDeleteAccount}
           >
-            <Ionicons name="trash-outline" size={20} color={colors.error} />
-            <Text style={styles.deleteButtonText}>Delete Account</Text>
+            <Ionicons name="trash-outline" size={20} color={theme.error} />
+            <Text style={[styles.deleteButtonText, { color: theme.error }]}>Delete Account</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -268,7 +285,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.gray[50],
   },
   scrollView: {
     flex: 1,
@@ -276,16 +292,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
     paddingBottom: 40,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 16,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: colors.gray[600],
   },
   emptyContainer: {
     flex: 1,
@@ -297,11 +303,9 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: colors.gray[900],
   },
   emptyDescription: {
     fontSize: 14,
-    color: colors.gray[600],
     textAlign: 'center',
   },
   header: {
@@ -309,25 +313,21 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: colors.primary[50],
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
     borderWidth: 3,
-    borderColor: colors.primary[200],
   },
   name: {
     fontSize: 24,
     fontWeight: '700',
-    color: colors.gray[900],
     marginBottom: 4,
   },
   email: {
     fontSize: 14,
-    color: colors.gray[600],
   },
   statsContainer: {
     flexDirection: 'row',
@@ -336,7 +336,6 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: colors.white,
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
@@ -345,15 +344,12 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 20,
     fontWeight: '700',
-    color: colors.gray[900],
   },
   statLabel: {
     fontSize: 12,
-    color: colors.gray[500],
     textTransform: 'uppercase',
   },
   menuSection: {
-    backgroundColor: colors.white,
     borderRadius: 16,
     marginBottom: 24,
     overflow: 'hidden',
@@ -364,7 +360,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.gray[100],
   },
   menuItemLeft: {
     flexDirection: 'row',
@@ -381,17 +376,14 @@ const styles = StyleSheet.create({
   menuText: {
     fontSize: 16,
     fontWeight: '500',
-    color: colors.gray[900],
   },
   divider: {
     height: 1,
-    backgroundColor: colors.gray[100],
     marginVertical: 8,
   },
   sectionLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: colors.gray[500],
     textTransform: 'uppercase',
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -409,6 +401,5 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.error,
   },
 });

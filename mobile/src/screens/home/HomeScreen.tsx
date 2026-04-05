@@ -9,29 +9,34 @@ import {
   TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { usePollStore } from '@/store/pollStore';
 import { useAuthStore } from '@/store/authStore';
 import { PollCard } from '@/components/poll/PollCard';
 import { Button } from '@/components/common/Button';
-import { colors } from '@/theme/colors';
-import { RootStackParamList, Poll } from '@/types';
+import { HomeRecentSkeleton } from '@/components/common/SkeletonLoader';
+import { useTheme } from '@/theme';
+import { MainTabScreenNavigationProp, Poll } from '@/types';
 
 type HomeScreenProps = {
-  navigation: NativeStackNavigationProp<RootStackParamList>;
+  navigation: MainTabScreenNavigationProp<'Home'>;
 };
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
+  const { theme } = useTheme();
   const [shareUrl, setShareUrl] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [recentLoading, setRecentLoading] = useState(true);
 
   const { isAuthenticated, user } = useAuthStore();
-  const { fetchPollByShareUrl, fetchRecentPolls, recentPolls, currentPoll, isLoading, error } = usePollStore();
+  const { fetchPollByShareUrl, fetchRecentPolls, recentPolls, currentPoll } = usePollStore();
 
   useEffect(() => {
-    fetchRecentPolls();
+    void (async () => {
+      await fetchRecentPolls();
+      setRecentLoading(false);
+    })();
   }, []);
 
   const handleRefresh = useCallback(async () => {
@@ -55,7 +60,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   };
 
   const handleCreatePoll = () => {
-    // Navigate to Create tab in tab navigator
     navigation.navigate('Create');
   };
 
@@ -64,40 +68,50 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor={theme.primary}
+            colors={[theme.primary]}
+          />
         }
       >
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>
+            <Text style={[styles.greeting, { color: theme.textPrimary }]}>
               {isAuthenticated ? `Hello, ${user?.name || 'there'}!` : 'Welcome!'}
             </Text>
-            <Text style={styles.subtitle}>Create or join a poll</Text>
+            <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+              Create or join a poll
+            </Text>
           </View>
           {isAuthenticated && (
             <TouchableOpacity
               style={styles.profileButton}
               onPress={() => navigation.navigate('Profile')}
             >
-              <Ionicons name="person-circle-outline" size={32} color={colors.primary[500]} />
+              <Ionicons name="person-circle-outline" size={32} color={theme.primary} />
             </TouchableOpacity>
           )}
         </View>
 
         {/* Search / Join Poll */}
         <View style={styles.searchContainer}>
-          <View style={styles.searchInputContainer}>
-            <Ionicons name="link-outline" size={20} color={colors.gray[400]} />
+          <View style={[styles.searchInputContainer, {
+            backgroundColor: theme.inputBg,
+            borderColor: theme.inputBorder,
+          }]}>
+            <Ionicons name="link-outline" size={20} color={theme.textTertiary} />
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, { color: theme.textPrimary }]}
               placeholder="Enter poll code or URL"
-              placeholderTextColor={colors.gray[400]}
+              placeholderTextColor={theme.textTertiary}
               value={shareUrl}
               onChangeText={setShareUrl}
               onSubmitEditing={handleSearch}
@@ -105,23 +119,29 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             />
           </View>
           <TouchableOpacity
-            style={styles.searchButton}
+            style={[styles.searchButton, { backgroundColor: theme.primary }]}
             onPress={handleSearch}
             disabled={isSearching || !shareUrl.trim()}
           >
-            <Ionicons name="arrow-forward" size={24} color={colors.white} />
+            <Ionicons name="arrow-forward" size={24} color={theme.textOnPrimary} />
           </TouchableOpacity>
         </View>
 
         {/* Create Poll CTA */}
         <View style={styles.createSection}>
-          <View style={styles.createCard}>
+          <View style={[styles.createCard, {
+            backgroundColor: theme.surface,
+            borderColor: theme.border,
+            borderTopColor: theme.borderAccent,
+          }]}>
             <View style={styles.createCardContent}>
-              <View style={styles.createIconContainer}>
-                <Ionicons name="add-circle" size={48} color={colors.primary[500]} />
+              <View style={[styles.createIconContainer, { backgroundColor: theme.primarySubtle }]}>
+                <Ionicons name="add-circle" size={40} color={theme.primary} />
               </View>
-              <Text style={styles.createTitle}>Create a Poll</Text>
-              <Text style={styles.createDescription}>
+              <Text style={[styles.createTitle, { color: theme.textPrimary }]}>
+                Create a Poll
+              </Text>
+              <Text style={[styles.createDescription, { color: theme.textSecondary }]}>
                 Ask a question, add options, and share with anyone
               </Text>
               <Button
@@ -134,9 +154,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         </View>
 
         {/* Recent Polls */}
-        {recentPolls.length > 0 && (
+        {recentLoading && (
           <View style={styles.recentSection}>
-            <Text style={styles.recentTitle}>Recent Polls</Text>
+            <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Recent Polls</Text>
+            <HomeRecentSkeleton />
+          </View>
+        )}
+        {!recentLoading && recentPolls.length > 0 && (
+          <View style={styles.recentSection}>
+            <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
+              Recent Polls
+            </Text>
             {recentPolls.map((poll) => (
               <TouchableOpacity
                 key={poll.id}
@@ -150,37 +178,32 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
         {/* Features */}
         <View style={styles.features}>
-          <Text style={styles.featuresTitle}>Why PollStraw?</Text>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
+            Why PollStraw?
+          </Text>
           <View style={styles.featuresList}>
-            <View style={styles.featureItem}>
-              <View style={[styles.featureIcon, { backgroundColor: colors.primary[50] }]}>
-                <Ionicons name="flash" size={20} color={colors.primary[500]} />
+            {[
+              { icon: 'flash', title: 'Real-time Results', desc: 'Watch votes come in live', bg: theme.primarySubtle, color: theme.primary },
+              { icon: 'share-social', title: 'Easy Sharing', desc: 'Share via link or QR code', bg: theme.infoSubtle, color: theme.info },
+              { icon: 'shield-checkmark', title: 'Vote Protection', desc: 'Prevent duplicate votes', bg: theme.successSubtle, color: theme.success },
+            ].map((feature) => (
+              <View
+                key={feature.title}
+                style={[styles.featureItem, { backgroundColor: theme.surface, borderColor: theme.border }]}
+              >
+                <View style={[styles.featureIcon, { backgroundColor: feature.bg }]}>
+                  <Ionicons name={feature.icon as any} size={20} color={feature.color} />
+                </View>
+                <View style={styles.featureText}>
+                  <Text style={[styles.featureTitle, { color: theme.textPrimary }]}>
+                    {feature.title}
+                  </Text>
+                  <Text style={[styles.featureDescription, { color: theme.textSecondary }]}>
+                    {feature.desc}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.featureText}>
-                <Text style={styles.featureTitle}>Real-time Results</Text>
-                <Text style={styles.featureDescription}>Watch votes come in live</Text>
-              </View>
-            </View>
-
-            <View style={styles.featureItem}>
-              <View style={[styles.featureIcon, { backgroundColor: colors.secondary[50] }]}>
-                <Ionicons name="share-social" size={20} color={colors.secondary[500]} />
-              </View>
-              <View style={styles.featureText}>
-                <Text style={styles.featureTitle}>Easy Sharing</Text>
-                <Text style={styles.featureDescription}>Share via link or QR code</Text>
-              </View>
-            </View>
-
-            <View style={styles.featureItem}>
-              <View style={[styles.featureIcon, { backgroundColor: colors.success + '20' }]}>
-                <Ionicons name="shield-checkmark" size={20} color={colors.success} />
-              </View>
-              <View style={styles.featureText}>
-                <Text style={styles.featureTitle}>Vote Protection</Text>
-                <Text style={styles.featureDescription}>Prevent duplicate votes</Text>
-              </View>
-            </View>
+            ))}
           </View>
         </View>
       </ScrollView>
@@ -191,7 +214,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.gray[50],
   },
   scrollContent: {
     paddingBottom: 24,
@@ -200,17 +222,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 16,
   },
   greeting: {
     fontSize: 24,
     fontWeight: '700',
-    color: colors.gray[900],
   },
   subtitle: {
     fontSize: 14,
-    color: colors.gray[500],
     marginTop: 4,
   },
   profileButton: {
@@ -218,7 +238,7 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     marginBottom: 24,
     gap: 12,
   },
@@ -226,95 +246,84 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.white,
-    borderRadius: 12,
+    borderRadius: 8,
     paddingHorizontal: 16,
     gap: 12,
     borderWidth: 1,
-    borderColor: colors.gray[200],
   },
   searchInput: {
     flex: 1,
-    paddingVertical: 14,
+    paddingVertical: 12,
     fontSize: 16,
-    color: colors.gray[900],
   },
   searchButton: {
-    width: 50,
-    height: 50,
-    backgroundColor: colors.primary[500],
-    borderRadius: 12,
+    width: 48,
+    height: 48,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   createSection: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     marginBottom: 24,
   },
   createCard: {
-    backgroundColor: colors.white,
-    borderRadius: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderTopWidth: 3,
     overflow: 'hidden',
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
   },
   createCardContent: {
     padding: 24,
     alignItems: 'center',
   },
   createIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 16,
   },
   createTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: colors.gray[900],
     marginBottom: 8,
   },
   createDescription: {
     fontSize: 14,
-    color: colors.gray[500],
     textAlign: 'center',
     marginBottom: 20,
+    lineHeight: 20,
   },
   recentSection: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     marginBottom: 24,
-    gap: 12,
+    gap: 8,
   },
-  recentTitle: {
+  sectionTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: colors.gray[900],
-    marginBottom: 4,
+    fontWeight: '600',
+    marginBottom: 8,
   },
   features: {
-    paddingHorizontal: 20,
-  },
-  featuresTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.gray[900],
-    marginBottom: 16,
+    paddingHorizontal: 16,
   },
   featuresList: {
-    gap: 12,
+    gap: 10,
   },
   featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.white,
     borderRadius: 12,
-    padding: 16,
-    gap: 16,
+    borderWidth: 1,
+    padding: 14,
+    gap: 14,
   },
   featureIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -324,11 +333,9 @@ const styles = StyleSheet.create({
   featureTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: colors.gray[900],
     marginBottom: 2,
   },
   featureDescription: {
     fontSize: 13,
-    color: colors.gray[500],
   },
 });

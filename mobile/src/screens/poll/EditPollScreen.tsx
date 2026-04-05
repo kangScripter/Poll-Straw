@@ -14,7 +14,7 @@ import { RouteProp } from '@react-navigation/native';
 import { usePollStore } from '@/store/pollStore';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 import { RootStackParamList, CreatePollInput } from '@/types';
 
 type EditPollScreenProps = {
@@ -23,6 +23,7 @@ type EditPollScreenProps = {
 };
 
 export const EditPollScreen: React.FC<EditPollScreenProps> = ({ navigation, route }) => {
+  const { theme } = useTheme();
   const { pollId } = route.params;
   const { currentPoll, fetchPoll, updatePoll, isLoading } = usePollStore();
 
@@ -97,6 +98,8 @@ export const EditPollScreen: React.FC<EditPollScreenProps> = ({ navigation, rout
       Alert.alert('Error', msg);
     }
   };
+
+  const styles = getStyles(theme);
 
   if (!currentPoll && isLoading) {
     return (
@@ -192,66 +195,67 @@ export const EditPollScreen: React.FC<EditPollScreenProps> = ({ navigation, rout
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.gray[50],
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: colors.gray[600],
-  },
-  warningCard: {
-    backgroundColor: '#fef3c7',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#f59e0b',
-  },
-  warningText: {
-    fontSize: 14,
-    color: '#92400e',
-    lineHeight: 20,
-  },
-  section: {
-    marginBottom: 24,
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 16,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.gray[900],
-    marginBottom: 12,
-  },
-  settingRow: {
-    paddingVertical: 8,
-  },
-  settingLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.gray[900],
-    marginBottom: 8,
-  },
-  buttonContainer: {
-    gap: 12,
-    marginTop: 8,
-  },
-});
+const getStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    keyboardView: {
+      flex: 1,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      padding: 20,
+      paddingBottom: 40,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    loadingText: {
+      fontSize: 16,
+      color: theme.textSecondary,
+    },
+    warningCard: {
+      backgroundColor: theme.warningSubtle,
+      borderRadius: 12,
+      padding: 14,
+      marginBottom: 20,
+      borderWidth: 1,
+      borderColor: theme.warning,
+    },
+    warningText: {
+      fontSize: 14,
+      color: theme.textPrimary,
+      lineHeight: 20,
+    },
+    section: {
+      marginBottom: 24,
+      backgroundColor: theme.surface,
+      borderRadius: 16,
+      padding: 16,
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: theme.textPrimary,
+      marginBottom: 12,
+    },
+    settingRow: {
+      paddingVertical: 8,
+    },
+    settingLabel: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: theme.textPrimary,
+      marginBottom: 8,
+    },
+    buttonContainer: {
+      gap: 12,
+      marginTop: 8,
+    },
+  });

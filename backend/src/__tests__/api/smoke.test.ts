@@ -2,8 +2,8 @@
  * Smoke tests: health, login, create poll, get poll, cast vote, get results.
  */
 import request from 'supertest';
-import { app } from '../../app';
-import { globalSetup, globalTeardown } from '../globalSetup';
+import { app } from '../../app.js';
+import { globalSetup, globalTeardown } from '../globalSetup.js';
 
 beforeAll(globalSetup, 15000);
 afterAll(globalTeardown, 10000);

@@ -1,3 +1,7 @@
+import type { CompositeNavigationProp, NavigatorScreenParams } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
 // User types
 export interface User {
   id: string;
@@ -88,7 +92,14 @@ export interface VoteResult {
   results: Poll;
 }
 
-// Navigation types
+// Navigation types (MainTabParamList must precede RootStackParamList)
+export type MainTabParamList = {
+  Home: undefined;
+  Create: undefined;
+  Dashboard: undefined;
+  Profile: undefined;
+};
+
 export type RootStackParamList = {
   // Auth screens
   Login: undefined;
@@ -97,7 +108,7 @@ export type RootStackParamList = {
   ResetPassword: { token: string } | undefined;
   
   // Main screens
-  MainTabs: undefined;
+  MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
   PollDetail: { pollId: string };
   CreatePoll: undefined;
   Vote: { pollId: string };
@@ -106,7 +117,6 @@ export type RootStackParamList = {
   EditPoll: { pollId: string };
 
   // User screens
-  Profile: undefined;
   EditProfile: undefined;
   MyPolls: undefined;
   
@@ -116,9 +126,13 @@ export type RootStackParamList = {
   AdminUsers: undefined;
 };
 
-export type MainTabParamList = {
-  Home: undefined;
-  Create: undefined;
-  Dashboard: undefined;
-  Profile: undefined;
-};
+/** Navigation prop for screens registered on MainTabs (tab routes + parent stack). */
+export type MainTabScreenNavigationProp<T extends keyof MainTabParamList> = CompositeNavigationProp<
+  BottomTabNavigationProp<MainTabParamList, T>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
+
+/** Create poll UI is both the Create tab and the CreatePoll stack (modal) screen. */
+export type CreatePollScreenNavigationProp =
+  | MainTabScreenNavigationProp<'Create'>
+  | NativeStackNavigationProp<RootStackParamList>;

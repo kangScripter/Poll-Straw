@@ -1,11 +1,17 @@
-import React, { useEffect, useRef } from 'react';
-import { ActivityIndicator, View, StyleSheet, Linking, Platform } from 'react-native';
-import { NavigationContainer, NavigationContainerRef, LinkingOptions } from '@react-navigation/native';
+import React, { useEffect, useRef, useMemo } from 'react';
+import { ActivityIndicator, View, StyleSheet, Linking } from 'react-native';
+import {
+  NavigationContainer,
+  NavigationContainerRef,
+  LinkingOptions,
+  DefaultTheme,
+  DarkTheme,
+} from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/store/authStore';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
+import { CustomTabBar } from './CustomTabBar';
 import { RootStackParamList, MainTabParamList } from '@/types';
 
 // Auth Screens
@@ -35,44 +41,10 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 const MainTabNavigator: React.FC = () => {
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName: keyof typeof Ionicons.glyphMap;
-
-          switch (route.name) {
-            case 'Home':
-              iconName = focused ? 'home' : 'home-outline';
-              break;
-            case 'Create':
-              iconName = focused ? 'add-circle' : 'add-circle-outline';
-              break;
-            case 'Dashboard':
-              iconName = focused ? 'grid' : 'grid-outline';
-              break;
-            case 'Profile':
-              iconName = focused ? 'person' : 'person-outline';
-              break;
-            default:
-              iconName = 'ellipse';
-          }
-
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: colors.primary[500],
-        tabBarInactiveTintColor: colors.gray[400],
-        tabBarStyle: {
-          borderTopWidth: 1,
-          borderTopColor: colors.gray[200],
-          paddingTop: 8,
-          paddingBottom: 8,
-          height: 60,
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '500',
-        },
+      tabBar={(props) => <CustomTabBar {...props} />}
+      screenOptions={{
         headerShown: false,
-      })}
+      }}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Create" component={CreatePollScreen} />
@@ -82,12 +54,14 @@ const MainTabNavigator: React.FC = () => {
   );
 };
 
-// Loading Screen
-const LoadingScreen: React.FC = () => (
-  <View style={styles.loadingContainer}>
-    <ActivityIndicator size="large" color={colors.primary[500]} />
-  </View>
-);
+const NavigationLoadingScreen: React.FC = () => {
+  const { theme } = useTheme();
+  return (
+    <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
+      <ActivityIndicator size="large" color={theme.primary} />
+    </View>
+  );
+};
 
 // Deep Linking Configuration
 // Using React Native's built-in Linking module for better compatibility
@@ -134,7 +108,24 @@ const linking: LinkingOptions<RootStackParamList> = {
 // Main App Navigator
 export const AppNavigator: React.FC = () => {
   const { isAuthenticated } = useAuthStore();
+  const { theme, isDark } = useTheme();
   const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
+
+  const navigationTheme = useMemo(
+    () => ({
+      ...(isDark ? DarkTheme : DefaultTheme),
+      colors: {
+        ...(isDark ? DarkTheme : DefaultTheme).colors,
+        primary: theme.primary,
+        background: theme.background,
+        card: theme.surface,
+        text: theme.textPrimary,
+        border: theme.border,
+        notification: theme.error,
+      },
+    }),
+    [theme, isDark]
+  );
 
   // Handle deep link when app is already open
   useEffect(() => {
@@ -171,7 +162,8 @@ export const AppNavigator: React.FC = () => {
     <NavigationContainer
       ref={navigationRef}
       linking={linking}
-      fallback={<LoadingScreen />}
+      theme={navigationTheme}
+      fallback={<NavigationLoadingScreen />}
     >
       <Stack.Navigator
         screenOptions={{
@@ -348,6 +340,5 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.white,
   },
 });

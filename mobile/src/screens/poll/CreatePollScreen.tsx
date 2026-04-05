@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -16,11 +16,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { usePollStore } from '@/store/pollStore';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
-import { colors } from '@/theme/colors';
-import { RootStackParamList, CreatePollInput, Poll } from '@/types';
+import { useTheme } from '@/theme';
+import { CreatePollScreenNavigationProp, CreatePollInput, Poll, RootStackParamList } from '@/types';
 
 type CreatePollScreenProps = {
-  navigation: NativeStackNavigationProp<RootStackParamList>;
+  navigation: CreatePollScreenNavigationProp;
 };
 
 interface PollOption {
@@ -32,6 +32,7 @@ interface PollOption {
 const EMOJI_OPTIONS = ['👍', '❤️', '😊', '🎉', '🔥', '⭐', '💯', '🚀', '🎯', '✨'];
 
 export const CreatePollScreen: React.FC<CreatePollScreenProps> = ({ navigation }) => {
+  const { theme } = useTheme();
   const { createPoll, isLoading } = usePollStore();
 
   const [title, setTitle] = useState('');
@@ -156,15 +157,7 @@ export const CreatePollScreen: React.FC<CreatePollScreenProps> = ({ navigation }
       // Reset form immediately after success
       resetForm();
 
-      // Helper to navigate to stack screens (works from both tab and stack contexts)
-      const navigateToStack = (screen: string, params?: any) => {
-        const parent = navigation.getParent();
-        if (parent) {
-          parent.navigate(screen as any, params);
-        } else {
-          navigation.navigate(screen as any, params);
-        }
-      };
+      const stackNav = (navigation.getParent() ?? navigation) as NativeStackNavigationProp<RootStackParamList>;
 
       Alert.alert(
         'Poll Created!',
@@ -172,11 +165,11 @@ export const CreatePollScreen: React.FC<CreatePollScreenProps> = ({ navigation }
         [
           {
             text: 'Share Poll',
-            onPress: () => navigateToStack('Share', { pollId: poll.id, shareUrl: poll.shareUrl }),
+            onPress: () => stackNav.navigate('Share', { pollId: poll.id, shareUrl: poll.shareUrl }),
           },
           {
             text: 'View Poll',
-            onPress: () => navigateToStack('PollDetail', { pollId: poll.id }),
+            onPress: () => stackNav.navigate('PollDetail', { pollId: poll.id }),
           },
           { text: 'Create Another', style: 'cancel' },
         ]
@@ -185,6 +178,167 @@ export const CreatePollScreen: React.FC<CreatePollScreenProps> = ({ navigation }
       Alert.alert('Error', error.message || 'Failed to create poll');
     }
   };
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    keyboardView: {
+      flex: 1,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      padding: 20,
+      paddingBottom: 40,
+    },
+    section: {
+      marginBottom: 24,
+      backgroundColor: theme.surface,
+      borderRadius: 16,
+      padding: 16,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: theme.textPrimary,
+      marginBottom: 12,
+    },
+    addButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    addButtonText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.primary,
+    },
+    optionContainer: {
+      marginBottom: 16,
+      paddingBottom: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.divider,
+    },
+    optionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    optionNumber: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: theme.textSecondary,
+      textTransform: 'uppercase',
+    },
+    removeButton: {
+      padding: 4,
+    },
+    emojiContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginBottom: 12,
+      paddingVertical: 8,
+    },
+    emojiButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.surface,
+    },
+    emojiButtonSelected: {
+      borderColor: theme.primary,
+      backgroundColor: theme.primarySubtle,
+    },
+    emojiText: {
+      fontSize: 18,
+    },
+    settingRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.divider,
+    },
+    settingInfo: {
+      flex: 1,
+      marginRight: 16,
+    },
+    settingLabel: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: theme.textPrimary,
+      marginBottom: 4,
+    },
+    settingDescription: {
+      fontSize: 13,
+      color: theme.textSecondary,
+    },
+    toggle: {
+      width: 50,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: theme.border,
+      justifyContent: 'center',
+      paddingHorizontal: 2,
+    },
+    toggleActive: {
+      backgroundColor: theme.primary,
+    },
+    toggleThumb: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: theme.surface,
+      alignSelf: 'flex-end',
+    },
+    radioGroup: {
+      marginTop: 8,
+    },
+    radioOption: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 8,
+    },
+    radio: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      borderWidth: 2,
+      borderColor: theme.border,
+      marginRight: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    radioSelected: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: theme.primary,
+    },
+    radioLabel: {
+      fontSize: 14,
+      color: theme.textPrimary,
+    },
+    buttonContainer: {
+      marginTop: 8,
+    },
+  }), [theme]);
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -228,7 +382,7 @@ export const CreatePollScreen: React.FC<CreatePollScreenProps> = ({ navigation }
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Options *</Text>
               <TouchableOpacity onPress={addOption} style={styles.addButton}>
-                <Ionicons name="add-circle" size={24} color={colors.primary[500]} />
+                <Ionicons name="add-circle" size={24} color={theme.primary} />
                 <Text style={styles.addButtonText}>Add Option</Text>
               </TouchableOpacity>
             </View>
@@ -242,7 +396,7 @@ export const CreatePollScreen: React.FC<CreatePollScreenProps> = ({ navigation }
                       onPress={() => removeOption(option.id)}
                       style={styles.removeButton}
                     >
-                      <Ionicons name="close-circle" size={20} color={colors.error} />
+                      <Ionicons name="close-circle" size={20} color={theme.error} />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -382,164 +536,3 @@ export const CreatePollScreen: React.FC<CreatePollScreenProps> = ({ navigation }
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.gray[50],
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  section: {
-    marginBottom: 24,
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 16,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.gray[900],
-    marginBottom: 12,
-  },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  addButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary[500],
-  },
-  optionContainer: {
-    marginBottom: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.gray[100],
-  },
-  optionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  optionNumber: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.gray[500],
-    textTransform: 'uppercase',
-  },
-  removeButton: {
-    padding: 4,
-  },
-  emojiContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 12,
-    paddingVertical: 8,
-  },
-  emojiButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.gray[200],
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.white,
-  },
-  emojiButtonSelected: {
-    borderColor: colors.primary[500],
-    backgroundColor: colors.primary[50],
-  },
-  emojiText: {
-    fontSize: 18,
-  },
-  settingRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.gray[100],
-  },
-  settingInfo: {
-    flex: 1,
-    marginRight: 16,
-  },
-  settingLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.gray[900],
-    marginBottom: 4,
-  },
-  settingDescription: {
-    fontSize: 13,
-    color: colors.gray[500],
-  },
-  toggle: {
-    width: 50,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.gray[300],
-    justifyContent: 'center',
-    paddingHorizontal: 2,
-  },
-  toggleActive: {
-    backgroundColor: colors.primary[500],
-  },
-  toggleThumb: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.white,
-    alignSelf: 'flex-end',
-  },
-  radioGroup: {
-    marginTop: 8,
-  },
-  radioOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  radio: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: colors.gray[300],
-    marginRight: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radioSelected: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.primary[500],
-  },
-  radioLabel: {
-    fontSize: 14,
-    color: colors.gray[700],
-  },
-  buttonContainer: {
-    marginTop: 8,
-  },
-});
